@@ -1,15 +1,17 @@
 {
   "version": 2,
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/index.js"
+  "experimentalServices": {
+    "frontend": {
+      "entrypoint": ".",
+      "routePrefix": "/",
+      "framework": "vite"
     },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+    "backend": {
+      "entrypoint": "backend/src/server.js",
+      "routePrefix": "/api",
+      "framework": "express"
     }
-  ],
+  },
   "env": {
     "VITE_VERCEL": "1"
   }
