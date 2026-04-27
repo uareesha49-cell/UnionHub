@@ -401,7 +401,10 @@ export function createDb({ dbPath }) {
       const uri = process.env.MONGODB_URI;
       if (!uri) throw new Error("MONGODB_URI is missing in .env");
       
-      const isVercel = process.env.VERCEL || process.env.VITE_VERCEL === '1';
+      const isVercel =
+        Boolean(process.env.VERCEL) ||
+        Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
+        process.env.VITE_VERCEL === "1";
 
       // Use lower timeout for serverless to fail fast if connection issues
       // maxPoolSize: 1 is recommended for serverless functions
