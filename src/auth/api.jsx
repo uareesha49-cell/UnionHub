@@ -5,8 +5,8 @@ import { CustomToast } from "../components/CustomToast";
 /**
  * Resolves the API URL for fetch.
  * - Dev: `__UNIONHUB_DEV_API_ORIGIN__` (Vite define) matches the dev proxy target.
- * - Prod (e.g. Netlify static): set `VITE_API_ORIGIN` at build time to your deployed API
- *   (e.g. Vercel backend `https://your-app.vercel.app`) — same-origin `/api` is not served on Netlify.
+ * - Prod: default same-origin `/api` (Vercel rewrites to `api/index.js`). If the SPA is hosted
+ *   elsewhere, set `VITE_API_ORIGIN` at build time to the API base URL (no trailing slash).
  */
 export function resolveApiUrl(path) {
   const rel = path.startsWith("/api") ? path : `/api${path}`;
