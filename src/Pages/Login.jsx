@@ -6,6 +6,7 @@ import * as Yup from "yup";
 import { Eye, EyeOff, ChevronDown } from "lucide-react";
 import { mediaData } from "../utils/mediaData";
 import { useAuth } from "../auth/AuthContext";
+import { ActionButton } from "../components/ActionButton";
 
 // ✅ Validation Schema
 const LoginSchema = Yup.object().shape({
@@ -40,7 +41,7 @@ export const Login = () => {
           }
         }}
       >
-        {({ handleSubmit }) => (
+        {({ handleSubmit, isSubmitting }) => (
           <Form onSubmit={handleSubmit} className="flex flex-col items-center w-full">
             <div className="flex flex-col items-start mb-4 w-full max-w-[432px]">
               <h2 className="text-lg mb-2 font-poppins text-inputlabel">Login As</h2>
@@ -143,12 +144,13 @@ export const Login = () => {
 
             {/* Login Button */}
             <div className="w-full flex justify-center mt-4">
-              <button
+              <ActionButton
                 type="submit"
-                className="w-full max-w-[432px] bg-primary text-white py-2 rounded-3xl font-montserrat"
+                loading={isSubmitting}
+                className="w-full max-w-[432px] bg-primary text-white py-2 rounded-3xl font-montserrat min-h-[44px]"
               >
                 Login
-              </button>
+              </ActionButton>
             </div>
           </Form>
         )}

@@ -16,11 +16,11 @@ export const Emailvalidation = ({ onSubmit, children }) => {
       <Formik
         initialValues={{ email: "" }}
         validationSchema={EmailSchema}
-        onSubmit={(values) => {
-          if (onSubmit) onSubmit(values);
+        onSubmit={async (values, helpers) => {
+          if (onSubmit) await onSubmit(values, helpers);
         }}
       >
-        {() => (
+        {(formikBag) => (
           <Form className="flex flex-col items-center w-full">
             {/* Input with image icon */}
             <div className="relative w-full max-w-[432px]">
@@ -46,7 +46,7 @@ export const Emailvalidation = ({ onSubmit, children }) => {
             />
 
             {/* Render Continue button or any children */}
-            {children}
+            {typeof children === "function" ? children(formikBag) : children}
           </Form>
         )}
       </Formik>

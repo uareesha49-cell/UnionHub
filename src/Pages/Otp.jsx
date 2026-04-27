@@ -5,6 +5,8 @@ import { Back } from "../components/Back";
 import { apiRequest } from "../auth/api";
 import { toast } from "sonner";
 import { CustomToast } from "../components/CustomToast";
+import { Loader2 } from "lucide-react";
+import { ActionButton } from "../components/ActionButton";
 
 export const Otp = () => {
   const navigate = useNavigate();
@@ -12,7 +14,8 @@ export const Otp = () => {
   const email = String(location?.state?.email || "").toLowerCase();
   const [otp, setOtp] = useState(Array(6).fill(""));
   const [timeLeft, setTimeLeft] = useState(59); 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
   const inputsRef = useRef([]);
 
   // Auto focus first input on load
@@ -36,7 +39,7 @@ export const Otp = () => {
   // Handle resend OTP
   const resendCode = async () => {
     if (!email) return;
-    setIsSubmitting(true);
+    setResendLoading(true);
     setOtp(Array(6).fill(""));
     setTimeLeft(60);
     inputsRef.current[0]?.focus();
@@ -48,7 +51,7 @@ export const Otp = () => {
     } catch (e) {
       // Toast handled in apiRequest
     } finally {
-      setIsSubmitting(false);
+      setResendLoading(false);
     }
   };
 
@@ -60,6 +63,7 @@ export const Otp = () => {
       return;
     }
 
+    setVerifyLoading(true);
     try {
       const data = await apiRequest("/auth/password-reset/verify-otp", {
         method: "POST",
@@ -73,6 +77,8 @@ export const Otp = () => {
       });
     } catch (e) {
       // Toast handled in apiRequest
+    } finally {
+      setVerifyLoading(false);
     }
   };
 
@@ -150,26 +156,28 @@ export const Otp = () => {
       <button
         type="button"
         onClick={resendCode}
-        disabled={timeLeft > 0}
-        className={`mt-4 font-montserrat text-sm font-semibold
-          ${timeLeft > 0 ? "text-gray-400 cursor-not-allowed" : "text-primary cursor-pointer hover:text-primary/80"}
-        `}
+        disabled={timeLeft > 0 || resendLoading}
+        className={`mt-4 mx-auto flex items-center justify-center gap-2 font-montserrat text-sm font-semibold min-h-[40px] max-w-[432px] ${
+          timeLeft > 0 || resendLoading
+            ? "text-gray-400 cursor-not-allowed"
+            : "text-primary cursor-pointer hover:text-primary/80"
+        }`}
       >
+        {resendLoading ? <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden /> : null}
         {timeLeft > 0 ? `Resend OTP in ${timeLeft}s` : "Resend OTP"}
       </button>
 
-      {/* Verify Button */}
-<button
-  onClick={handleVerify}
-  disabled={isSubmitting || otp.some((digit) => digit === "")}
-  className={`w-full max-w-[432px] py-2 rounded-3xl font-montserrat mt-[30px] block mx-auto text-white
-    ${otp.some((digit) => digit === "") 
-      ? "bg-gray-400 cursor-not-allowed" 
-      : "bg-primary cursor-pointer"}
-  `}
->
-  Verify
-</button>
+      <ActionButton
+        type="button"
+        onClick={handleVerify}
+        loading={verifyLoading}
+        disabled={otp.some((digit) => digit === "")}
+        className={`w-full max-w-[432px] py-2 rounded-3xl font-montserrat mt-[30px] block mx-auto min-h-[44px] text-white ${
+          otp.some((digit) => digit === "") ? "bg-gray-400" : "bg-primary"
+        }`}
+      >
+        Verify
+      </ActionButton>
 
       <Back variant="inline" className="mx-auto" />
     </Signreset>

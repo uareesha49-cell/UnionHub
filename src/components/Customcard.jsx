@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export const Customcard = ({
   heading,
@@ -9,7 +10,8 @@ export const Customcard = ({
   onButton2Click,
   button1Bg = "bg-gray-400",
   button2Bg = "bg-blue-500",
-  onClose, 
+  button2Loading = false,
+  onClose,
 }) => {
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -46,15 +48,23 @@ export const Customcard = ({
         {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 w-full justify-center items-center">
           <button
+            type="button"
             onClick={onButton1Click}
-            className={`w-full sm:w-[170px] h-[42px] rounded-full text-white font-montserrat ${button1Bg}`}
+            disabled={button2Loading}
+            className={`w-full sm:w-[170px] h-[42px] rounded-full text-white font-montserrat inline-flex items-center justify-center gap-2 ${button1Bg} ${button2Loading ? "opacity-60 cursor-not-allowed" : ""}`}
           >
             {button1Text}
           </button>
           <button
+            type="button"
             onClick={onButton2Click}
-            className={`w-full sm:w-[170px] h-[42px] rounded-full text-white font-montserrat ${button2Bg}`}
+            disabled={button2Loading}
+            aria-busy={button2Loading || undefined}
+            className={`w-full sm:w-[170px] h-[42px] rounded-full text-white font-montserrat inline-flex items-center justify-center gap-2 ${button2Bg} ${button2Loading ? "opacity-90 cursor-wait" : ""}`}
           >
+            {button2Loading ? (
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin" strokeWidth={2.5} aria-hidden />
+            ) : null}
             {button2Text}
           </button>
         </div>

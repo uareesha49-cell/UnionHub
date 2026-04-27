@@ -18,6 +18,7 @@ export const Employees = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [modalType, setModalType] = useState("created");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isNewEmployee, setIsNewEmployee] = useState(false);
   const [showForm, setShowForm] = useState(false); // 👈 new state for toggling table/form
@@ -285,6 +286,7 @@ export const Employees = () => {
       setDeleteTarget(null);
       return;
     }
+    setDeleteSubmitting(true);
     try {
       await apiRequest(`/director/users/${deleteTarget.id}`, { method: "DELETE", token: auth.token });
       setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
@@ -294,6 +296,7 @@ export const Employees = () => {
     } catch (e) {
       // Toast handled in apiRequest
     } finally {
+      setDeleteSubmitting(false);
       setShowDeleteModal(false);
       setDeleteTarget(null);
     }
@@ -308,14 +311,8 @@ export const Employees = () => {
           className: "bg-grey text-white hover:bg-gray-400 font-semibold font-montserrat w-full sm:w-auto px-6 sm:px-[60px]",
         },
         {
-          label: isSubmitting ? (
-            <div className="flex items-center justify-center gap-2">
-              <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>Creating...</span>
-            </div>
-          ) : (
-            "Create Account"
-          ),
+          label: "Create Account",
+          loading: isSubmitting,
           onClick: handleCreateAccount,
           disabled: isSubmitting,
           className: "bg-primary font-semibold font-montserrat text-white w-full sm:w-[200px] px-6 sm:px-9",
@@ -328,14 +325,8 @@ export const Employees = () => {
           className: "bg-grey text-white hover:bg-gray-400 font-semibold font-montserrat w-full sm:w-auto px-6 sm:px-[60px]",
         },
         {
-          label: isSubmitting ? (
-            <div className="flex items-center justify-center gap-2">
-              <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>Updating...</span>
-            </div>
-          ) : (
-            "Update"
-          ),
+          label: "Update",
+          loading: isSubmitting,
           onClick: handleUpdateAccount,
           disabled: isSubmitting,
           className: "bg-primary font-semibold font-montserrat text-white w-full sm:w-[200px] px-6 sm:px-9",
@@ -432,10 +423,12 @@ export const Employees = () => {
           button1Bg="bg-gray-400"
           button2Bg="bg-[#E30000]"
           onButton1Click={() => {
+            if (deleteSubmitting) return;
             setShowDeleteModal(false);
             setDeleteTarget(null);
           }}
           onButton2Click={handleDeleteAccount}
+          button2Loading={deleteSubmitting}
         />
       )}
 

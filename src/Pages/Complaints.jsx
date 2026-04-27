@@ -3,7 +3,7 @@ import { useAuth } from "../auth/AuthContext";
 import { apiRequest } from "../auth/api";
 import { toast } from "sonner";
 import { CustomToast } from "../components/CustomToast";
-import { CheckCircle2 } from "lucide-react";
+import { ActionButton } from "../components/ActionButton";
 
 function formatWhen(iso) {
   if (!iso) return "—";
@@ -118,13 +118,13 @@ export const Complaints = () => {
                 maxLength={8000}
               />
             </div>
-            <button
+            <ActionButton
               type="submit"
-              disabled={submitting}
-              className="self-start rounded-lg bg-[#1E6B78] text-white px-5 py-2 text-sm font-semibold disabled:opacity-50"
+              loading={submitting}
+              className="self-start rounded-lg bg-[#1E6B78] text-white px-5 py-2 text-sm font-semibold min-h-[40px]"
             >
-              {submitting ? "Sending…" : "Submit complaint"}
-            </button>
+              Submit complaint
+            </ActionButton>
           </form>
         </div>
       ) : null}
@@ -180,15 +180,14 @@ export const Complaints = () => {
                     </td>
                     <td className="px-4 py-3">
                       {c.status === "open" ? (
-                        <button
+                        <ActionButton
                           type="button"
-                          disabled={completingId === c.id}
+                          loading={completingId === c.id}
                           onClick={() => markComplete(c.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-700 text-emerald-800 px-2 py-1 text-xs font-semibold hover:bg-emerald-50 disabled:opacity-50"
+                          className="rounded-lg border border-emerald-700 text-emerald-800 px-2 py-1 text-xs font-semibold hover:bg-emerald-50 min-h-[32px]"
                         >
-                          <CheckCircle2 className="w-4 h-4" aria-hidden />
-                          {completingId === c.id ? "…" : "Mark complete"}
-                        </button>
+                          Mark complete
+                        </ActionButton>
                       ) : (
                         <span className="text-xs text-grey">—</span>
                       )}

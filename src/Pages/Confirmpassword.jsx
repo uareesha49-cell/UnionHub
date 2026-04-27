@@ -7,6 +7,7 @@ import { Back } from "../components/Back";
 import { apiRequest } from "../auth/api";
 import { toast } from "sonner";
 import { CustomToast } from "../components/CustomToast";
+import { ActionButton } from "../components/ActionButton";
 
 export const Confirmpassword = () => {
   const [newPassword, setNewPassword] = useState("");
@@ -85,17 +86,17 @@ export const Confirmpassword = () => {
       />
 
       {/* Update Button */}
-      <button
-        className={`w-full max-w-[422px] py-2 rounded-3xl font-montserrat mt-3 block mx-auto ${
-          newPassword && confirmPassword
-            ? "bg-primary text-white cursor-pointer"
-            : "bg-primary text-white cursor-not-allowed"
-        }`}
+      <ActionButton
+        type="button"
+        loading={isSubmitting}
         onClick={handleUpdateClick}
-        disabled={isSubmitting || !newPassword || !confirmPassword}
+        disabled={!newPassword || !confirmPassword}
+        className={`w-full max-w-[422px] py-2 rounded-3xl font-montserrat mt-3 block mx-auto min-h-[44px] ${
+          newPassword && confirmPassword ? "bg-primary text-white" : "bg-primary text-white opacity-70"
+        }`}
       >
         Update
-      </button>
+      </ActionButton>
 
       {/* Image Modal */}
       {isModalOpen && (

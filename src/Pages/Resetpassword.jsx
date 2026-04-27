@@ -2,16 +2,15 @@ import { Signreset } from "../components/Signreset";
 import { Emailvalidation } from "../components/Emailvalidation";
 import { useNavigate } from "react-router-dom";
 import { Back } from "../components/Back";
-import { useState } from "react";
 import { apiRequest } from "../auth/api";
+import { ActionButton } from "../components/ActionButton";
+
 export const Resetpassword = () => {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Handle email submit
-  const handleEmailSubmit = async (values) => {
+  const handleEmailSubmit = async (values, { setSubmitting }) => {
     const email = String(values?.email || "").toLowerCase();
-    setIsSubmitting(true);
+    setSubmitting(true);
     try {
       await apiRequest("/auth/password-reset/request", {
         method: "POST",
@@ -21,7 +20,7 @@ export const Resetpassword = () => {
     } catch (e) {
       // Toast handled in apiRequest
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
@@ -33,14 +32,15 @@ export const Resetpassword = () => {
 
       {/* Email Input (Formik handles validation inside) */}
       <Emailvalidation onSubmit={handleEmailSubmit}>
-        {/* Continue Button inside Emailvalidation */}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full max-w-[432px] bg-primary text-white py-2 rounded-3xl font-montserrat mt-[30px]"
-        >
-          Continue
-        </button>
+        {({ isSubmitting }) => (
+          <ActionButton
+            type="submit"
+            loading={isSubmitting}
+            className="w-full max-w-[432px] bg-primary text-white py-2 rounded-3xl font-montserrat mt-[30px] min-h-[44px]"
+          >
+            Continue
+          </ActionButton>
+        )}
       </Emailvalidation>
       <Back variant="inline" className="mx-auto" />
     </Signreset>

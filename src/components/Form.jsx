@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, ChevronDown } from "lucide-react";
+import { ActionButton } from "./ActionButton";
 function PasswordInput({ field, isNewEmployee, className }) {
   const [showPassword, setShowPassword] = useState(false);
   const isControlled = field.value !== undefined;
@@ -134,16 +135,18 @@ export function Form({ heading, fields = [], buttons = [], isNewEmployee }) {
 <div className="flex justify-end w-full">
         <div className="flex gap-4 w-full justify-end flex-col-reverse sm:flex-row">
           {buttons.map((btn, idx) => (
-            <button
+            <ActionButton
               key={idx}
+              type={btn.type || "button"}
               onClick={btn.onClick}
               disabled={btn.disabled}
+              loading={btn.loading}
               className={`py-3 rounded-[50px] font-montserrat text-center ${
-                btn.disabled ? "opacity-60 cursor-not-allowed" : ""
+                btn.disabled || btn.loading ? "opacity-90 cursor-not-allowed" : ""
               } ${btn.className}`}
             >
               {btn.label}
-            </button>
+            </ActionButton>
           ))}
         </div>
       </div>

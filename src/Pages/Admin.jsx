@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthContext";
 import { apiRequest } from "../auth/api";
 import { toast } from "sonner";
 import { CustomToast } from "../components/CustomToast";
+import { ActionButton } from "../components/ActionButton";
 
 export const Admin = () => {
   const auth = useAuth();
@@ -16,6 +17,7 @@ export const Admin = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -25,7 +27,7 @@ export const Admin = () => {
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
   const handleUpdate = async () => {
-    if (!auth.token) return;
+    if (!auth.token || saving) return;
     if (!currentPassword) {
       toast.custom((t) => <CustomToast id={t} message="Please enter your current password" type="error" />);
       return;
@@ -35,6 +37,7 @@ export const Admin = () => {
       return;
     }
 
+    setSaving(true);
     try {
       const data = await apiRequest("/director/users/account", {
         method: "PUT",
@@ -54,6 +57,8 @@ export const Admin = () => {
       setShowSuccessModal(true);
     } catch (e) {
       toast.custom((t) => <CustomToast id={t} message={e?.message || "Failed to update details"} type="error" />);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -148,12 +153,14 @@ export const Admin = () => {
 
         {/* Update Button */}
         <div className="flex justify-end mt-4">
-          <button
+          <ActionButton
+            type="button"
             onClick={handleUpdate}
-            className="bg-primary text-white font-semibold px-12 py-2 rounded-3xl"
+            loading={saving}
+            className="bg-primary text-white font-semibold px-12 py-2 rounded-3xl min-h-[44px]"
           >
             Update Details
-          </button>
+          </ActionButton>
         </div>
       </div>
 

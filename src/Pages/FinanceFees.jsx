@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { CustomToast } from "../components/CustomToast";
 import { mediaData } from "../utils/mediaData";
 import { Download } from "lucide-react";
+import { ActionButton } from "../components/ActionButton";
 
 export const FinanceFees = () => {
   const auth = useAuth();
@@ -153,13 +154,14 @@ export const FinanceFees = () => {
             />
           </div>
           <div className="md:col-span-2">
-            <button
+            <ActionButton
               type="submit"
-              disabled={saving || loading}
-              className="rounded-lg bg-[#1E6B78] text-white px-5 py-2 text-sm font-semibold disabled:opacity-50"
+              loading={saving}
+              disabled={loading}
+              className="rounded-lg bg-[#1E6B78] text-white px-5 py-2 text-sm font-semibold min-h-[40px]"
             >
-              {saving ? "Saving…" : "Save fee"}
-            </button>
+              Save fee
+            </ActionButton>
           </div>
         </form>
         {!loading && studentOptions.length === 0 ? (

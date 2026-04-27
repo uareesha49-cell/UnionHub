@@ -3,6 +3,7 @@ import { mediaData } from "../utils/mediaData";
 import { Customcard } from "../components/Customcard";
 import { Imagemodal } from "../components/Imagemodal";
 import { Search } from "lucide-react";
+import { ActionButton } from "../components/ActionButton";
 import { useAuth } from "../auth/AuthContext";
 import { apiRequest } from "../auth/api";
 import { toast } from "sonner";
@@ -35,6 +36,8 @@ export const Vote = () => {
   const [modalType, setModalType] = useState(""); // "created" or "updated"
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState("pending");
+  const [pollSaving, setPollSaving] = useState(false);
+  const [votingKey, setVotingKey] = useState(null);
 
   useEffect(() => {
     if (!auth.token) return;
@@ -86,13 +89,14 @@ export const Vote = () => {
   };
 
   const handleSubmit = async () => {
-    if (!isDirector) return;
+    if (!isDirector || pollSaving) return;
 
     if (!pollName || !pollDesc || !endDate) {
       toast.custom((t) => <CustomToast id={t} message="Please fill all fields" type="error" />);
       return;
     }
 
+    setPollSaving(true);
     try {
       if (editIndex !== null) {
         const current = polls[editIndex];
@@ -132,6 +136,8 @@ export const Vote = () => {
       setEditIndex(null);
     } catch (e) {
       toast.custom((t) => <CustomToast id={t} message={e?.message || "Failed to save poll"} type="error" />);
+    } finally {
+      setPollSaving(false);
     }
   };
 
@@ -162,7 +168,9 @@ export const Vote = () => {
   const handleVote = async (pollIndex, candidateIndex) => {
     const poll = polls[pollIndex];
     if (!auth.token || !poll.id) return;
-    
+    const k = `${pollIndex}-${candidateIndex}`;
+    if (votingKey) return;
+    setVotingKey(k);
     try {
       const response = await apiRequest(`/content/votes/${poll.id}/vote`, {
         method: "POST",
@@ -178,6 +186,8 @@ export const Vote = () => {
       toast.custom((t) => <CustomToast id={t} message="Vote submitted successfully!" type="success" />);
     } catch (e) {
       toast.custom((t) => <CustomToast id={t} message={e?.message || "Failed to vote"} type="error" />);
+    } finally {
+      setVotingKey(null);
     }
   };
 
@@ -417,12 +427,14 @@ export const Vote = () => {
   Cancel
 </button>
 
-              <button
+              <ActionButton
+                type="button"
                 onClick={handleSubmit}
-                className="w-full sm:w-[222px] h-[44px] flex font-semibold items-center justify-center gap-3 bg-primary text-white rounded-[22px] px-4 py-2 shadow-md"
+                loading={pollSaving}
+                className="w-full sm:w-[222px] h-[44px] font-semibold bg-primary text-white rounded-[22px] px-4 py-2 shadow-md"
               >
                 {editIndex !== null ? "Update Poll" : "Create Voting Poll"}
-              </button>
+              </ActionButton>
             </div>
           </div>
         ) : (
@@ -492,12 +504,14 @@ export const Vote = () => {
                   {/* Vote Button - Hidden for Admins and Candidates */}
                   {!isDirector && !isCandidate && (
                     !poll.votedUsers?.includes(auth.user?.id) && activeTab !== "completed" ? (
-                      <button
+                      <ActionButton
+                        type="button"
                         onClick={() => handleVote(idx, i)}
-                        className="bg-primary text-white text-sm px-4 py-2 rounded-lg hover:bg-opacity-90 transition font-montserrat font-semibold shadow-sm"
+                        loading={votingKey === `${idx}-${i}`}
+                        className="bg-primary text-white text-sm px-4 py-2 rounded-lg hover:bg-opacity-90 transition font-montserrat font-semibold shadow-sm min-h-[40px]"
                       >
                         Vote
-                      </button>
+                      </ActionButton>
                     ) : (
                       <button
                         disabled

@@ -6,6 +6,7 @@ import { apiRequest } from "../auth/api";
 import { toast } from "sonner";
 import { CustomToast } from "../components/CustomToast";
 import { mediaData } from "../utils/mediaData";
+import { ActionButton } from "../components/ActionButton";
 import { formatMoney, prettyPeriodLabel, roleLabel, staffNumericId } from "../utils/payrollFormat";
 
 const emptyLine = () => ({ label: "", amount: "" });
@@ -417,13 +418,13 @@ export const FinanceSalaries = () => {
                 <button type="button" onClick={closeEdit} className="px-5 py-2 rounded-full bg-grey text-white text-sm">
                   Cancel
                 </button>
-                <button
+                <ActionButton
                   type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 rounded-full bg-[#1E6B78] text-white text-sm font-semibold disabled:opacity-60"
+                  loading={saving}
+                  className="px-5 py-2 rounded-full bg-[#1E6B78] text-white text-sm font-semibold min-h-[40px]"
                 >
-                  {saving ? "Saving…" : "Save payroll"}
-                </button>
+                  Save payroll
+                </ActionButton>
               </div>
             </form>
             )}

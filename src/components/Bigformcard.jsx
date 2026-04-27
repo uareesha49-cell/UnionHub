@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { ActionButton } from "./ActionButton";
 import { mediaData } from "../utils/mediaData";
 import { toast } from "sonner";
 import { CustomToast } from "../components/CustomToast";
 
 export const Bigformcard = ({ initialData, onCreate, onCancel }) => {
+  const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [venue, setVenue] = useState("");
   const [date, setDate] = useState("");
@@ -23,16 +25,23 @@ export const Bigformcard = ({ initialData, onCreate, onCancel }) => {
     }
   }, [initialData]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitting) return;
     if (!title || !venue || !date || !startTime || !endTime) {
       toast.custom((t) => <CustomToast id={t} message="Please fill all required fields" type="error" />);
       return;
     }
-    // Pass action type to parent
-    onCreate(
-      { title, venue, date, startTime, endTime, instructions },
-      initialData ? "update" : "create"
-    );
+    setSubmitting(true);
+    try {
+      const payload = { title, venue, date, startTime, endTime, instructions };
+      const action = initialData ? "update" : "create";
+      const result = onCreate(payload, action);
+      if (result != null && typeof result.then === "function") {
+        await result;
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -145,12 +154,14 @@ export const Bigformcard = ({ initialData, onCreate, onCancel }) => {
           >
             Cancel
           </button>
-          <button
+          <ActionButton
+            type="button"
             onClick={handleSubmit}
+            loading={submitting}
             className="w-full sm:w-[200px] h-[44px] rounded-full bg-primary text-white font-semibold font-montserrat"
           >
             {initialData ? "Update Meeting" : "Create Meeting"}
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>
