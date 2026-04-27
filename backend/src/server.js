@@ -27,6 +27,46 @@ const db = createDb({ dbPath: process.env.DB_PATH });
 
 const app = express();
 
+/**
+ * Vercel `experimentalServices` backends with `routePrefix: "/api"` receive the URL with
+ * that prefix removed (e.g. POST /auth/director/login). Our routes are mounted at /api/...
+ * so we restore the prefix before any routing.
+ */
+function restoreApiPrefixForStrippedService(req, _res, next) {
+  const raw = req.url || req.originalUrl || "";
+  const q = raw.indexOf("?");
+  const pathOnly = (q === -1 ? raw : raw.slice(0, q)) || "/";
+  const query = q === -1 ? "" : raw.slice(q);
+
+  if (pathOnly === "/api" || pathOnly.startsWith("/api/")) {
+    next();
+    return;
+  }
+
+  const looksLikeApi =
+    pathOnly.startsWith("/auth") ||
+    pathOnly.startsWith("/director/") ||
+    pathOnly.startsWith("/content") ||
+    pathOnly.startsWith("/payroll") ||
+    pathOnly.startsWith("/fees") ||
+    pathOnly === "/health";
+
+  if (looksLikeApi) {
+    req.url = `/api${pathOnly}${query}`;
+    if (typeof req.originalUrl === "string") {
+      const oq = req.originalUrl.indexOf("?");
+      const op = (oq === -1 ? req.originalUrl : req.originalUrl.slice(0, oq)) || "/";
+      const oQuery = oq === -1 ? "" : req.originalUrl.slice(oq);
+      if (op !== "/api" && !op.startsWith("/api/")) {
+        req.originalUrl = `/api${op}${oQuery}`;
+      }
+    }
+  }
+  next();
+}
+
+app.use(restoreApiPrefixForStrippedService);
+
 // Ensure MongoDB is ready before API handlers (Vercel cold starts + local reconnects)
 app.use(async (req, res, next) => {
   if (!req.path.startsWith("/api")) {
