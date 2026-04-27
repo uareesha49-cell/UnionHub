@@ -1,0 +1,18 @@
+# Union Hub — static Vite app on Netlify.
+# API: Netlify does not run the Express `/api` app. Deploy the backend separately (e.g. Vercel
+# with this repo’s `api/index.js`), then in Netlify UI → Environment variables set:
+#   VITE_API_ORIGIN = https://your-api-host.example.com   (no trailing slash; rebuild after change)
+# On the API host set CORS_ORIGIN to include your Netlify URL (comma-separated list is supported).
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# React Router: real files under /dist are served first; everything else gets the SPA shell.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
