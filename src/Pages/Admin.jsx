@@ -9,15 +9,9 @@ import { CustomToast } from "../components/CustomToast";
 export const Admin = () => {
   const auth = useAuth();
   const isAuthenticated = auth.isAuthenticated;
-  const isDirector = auth.user?.role === "director";
-  const roleTitle = auth.user?.role
-    ? `${String(auth.user.role).slice(0, 1).toUpperCase()}${String(auth.user.role).slice(1)}`
-    : "Admin";
 
   const [name, setName] = useState(() => auth.user?.name || "");
-  const [email, setEmail] = useState(() => auth.user?.email || "");
   const [nameTouched, setNameTouched] = useState(false);
-  const [emailTouched, setEmailTouched] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -26,8 +20,7 @@ export const Admin = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     if (!nameTouched) setName(auth.user?.name || "");
-    if (!emailTouched) setEmail(auth.user?.email || "");
-  }, [auth.user, emailTouched, isAuthenticated, nameTouched]);
+  }, [auth.user, isAuthenticated, nameTouched]);
 
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
@@ -48,15 +41,12 @@ export const Admin = () => {
         token: auth.token,
         body: {
           name,
-          email,
           oldPassword: currentPassword,
           newPassword: newPassword || undefined,
         },
       });
       setNameTouched(false);
-      setEmailTouched(false);
       setName(data.user?.name || "");
-      setEmail(data.user?.email || "");
       auth.updateSession({ token: data.token, user: data.user });
       setCurrentPassword("");
       setNewPassword("");
@@ -95,20 +85,19 @@ export const Admin = () => {
           />
         </div>
 
-        {/* Email */}
+        {/* Email (read-only — cannot be changed) */}
         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
           <label className="w-[175px] font-semibold text-grey">Email Address</label>
           <input
             type="email"
-            value={email}
-            disabled={!isDirector}
-            onChange={(e) => {
-              setEmailTouched(true);
-              setEmail(e.target.value);
-            }}
-            placeholder="johndoe@gmail.com"
+            value={auth.user?.email ?? ""}
+            readOnly
+            disabled
             autoComplete="off"
-            className={`flex-1 bg-[#F1F1F1] rounded-lg px-3 py-2 focus:outline-none text-black placeholder-gray-500 ${!isDirector ? "opacity-50 cursor-not-allowed" : ""}`}
+            placeholder="—"
+            title="Email cannot be changed"
+            aria-readonly="true"
+            className="flex-1 bg-[#F1F1F1] rounded-lg px-3 py-2 text-grey cursor-not-allowed opacity-90 focus:outline-none placeholder-gray-400"
           />
         </div>
       </div>

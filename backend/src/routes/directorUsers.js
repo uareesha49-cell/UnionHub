@@ -278,7 +278,7 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
   });
 
   router.put("/account", async (req, res) => {
-    const { name, email, oldPassword, newPassword } = req.body || {};
+    const { name, oldPassword, newPassword } = req.body || {};
     if (!oldPassword) {
       res.status(400).json({ error: "Old password is required" });
       return;
@@ -296,12 +296,8 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       return;
     }
 
-    if (email !== undefined && email !== current.email && req.user.role !== "director") {
-      res.status(403).json({ error: "Only directors can update email" });
-      return;
-    }
-
-    if (name === undefined && email === undefined && !newPassword) {
+    // Email is never updated via profile — identity is fixed (directors included).
+    if (name === undefined && !newPassword) {
       res.status(400).json({ error: "No changes provided" });
       return;
     }
@@ -315,7 +311,6 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       const updated = await db.updateUserAccount({
         id: current.id,
         name,
-        email: req.user.role === "director" ? email : undefined,
         password_hash: nextPasswordHash,
         password_plain: newPassword,
       });
