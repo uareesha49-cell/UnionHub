@@ -2,20 +2,11 @@ import { clearAuth } from "./authStorage";
 import { toast } from "sonner";
 import { CustomToast } from "../components/CustomToast";
 
-/**
- * Resolves the API URL for fetch.
- * - Dev: `__UNIONHUB_DEV_API_ORIGIN__` (Vite define) matches the dev proxy target.
- * - Prod: default same-origin `/api` (Vercel rewrites to `api/index.js`). If the SPA is hosted
- *   elsewhere, set `VITE_API_ORIGIN` at build time to the API base URL (no trailing slash).
- */
+/** Set by Vite `define` in dev only — same port resolution as `vite.config.js` proxy. */
 export function resolveApiUrl(path) {
   const rel = path.startsWith("/api") ? path : `/api${path}`;
   if (typeof __UNIONHUB_DEV_API_ORIGIN__ !== "undefined" && __UNIONHUB_DEV_API_ORIGIN__) {
     return `${__UNIONHUB_DEV_API_ORIGIN__}${rel}`;
-  }
-  const prodOrigin = import.meta.env.VITE_API_ORIGIN;
-  if (prodOrigin) {
-    return `${String(prodOrigin).replace(/\/$/, "")}${rel}`;
   }
   return rel;
 }
