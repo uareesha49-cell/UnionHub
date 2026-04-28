@@ -20,7 +20,7 @@ export const Signreset = ({ centerHeading, children, contentOffsetClassName = ""
           </h2>
         </div>
       </div>
-      <div className="flex-1 flex items-start justify-center px-4 sm:px-8 lg:px-16 pt-8 pb-4 lg:pt-16 lg:pb-6 lg:overflow-y-auto">
+      <div className="flex-1 flex items-start justify-center px-4 sm:px-8 lg:px-16 pt-8 pb-4 lg:pt-16 lg:pb-6">
         <div className={`w-full max-w-md ${contentOffsetClassName}`.trim()}>
           <div className="hidden items-center gap-3 mb-8">
             <img

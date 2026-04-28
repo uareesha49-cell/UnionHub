@@ -30,7 +30,6 @@ export async function apiRequest(path, { method = "GET", token, body } = {}) {
       window.dispatchEvent(new Event("unionhub_network_error"));
     }
     const message = "Network error. Please check your connection.";
-    toast.custom((t) => <CustomToast id={t} message={message} />);
     throw new Error(message);
   }
 
