@@ -1,5 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
+  Calculator,
+  CalendarDays,
   LayoutDashboard,
   LogOut,
   MessageSquareWarning,
@@ -22,12 +24,13 @@ const staffPayrollRoles = [
   "finance",
 ];
 
-/** Student role: only these four entries (same sidebar chrome as staff). */
+/** Student role: sidebar entries (same chrome as staff). */
 const studentPages = [
   { name: "My account", route: "/layout/student-home", LucideIcon: LayoutDashboard },
   { name: "Complaints", route: "/layout/complaints", LucideIcon: MessageSquareWarning },
   { name: "FAQ", route: "/layout/faq", icon: mediaData.Faq },
   { name: "Vouchers", route: "/layout/student-vouchers", LucideIcon: Receipt },
+  { name: "CGPA calculator", route: "/layout/student-cgpa", LucideIcon: Calculator },
   { name: "Profile", route: "/layout/admin", LucideIcon: UserCircle },
 ];
 
@@ -39,6 +42,7 @@ const staffPages = [
   { name: "News & Updates", route: "/layout/news", icon: mediaData.News },
   { name: "Emp. Benefits", route: "/layout/benefits", icon: mediaData.Empbenefits },
   { name: "Payroll", route: "/layout/payroll", LucideIcon: Wallet, roles: staffPayrollRoles },
+  { name: "Timetable", route: "/layout/tech-timetable", LucideIcon: CalendarDays, roles: ["tech_staff"] },
   { name: "Salary management", route: "/layout/finance-salaries", LucideIcon: Table2, roles: ["finance"] },
   { name: "Fee management", route: "/layout/finance-fees", LucideIcon: Receipt, roles: ["finance"] },
   { name: "Students", route: "/layout/students", LucideIcon: School, roles: ["director", "principal", "vice_principal"] },

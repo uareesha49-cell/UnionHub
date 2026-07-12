@@ -31,8 +31,13 @@ export function createAuthRouter({ db, jwtSecret }) {
 
   router.post("/director/register", async (req, res) => {
     const { email, password, name } = req.body || {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !password) {
       res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: "Invalid email address" });
       return;
     }
 
@@ -69,8 +74,13 @@ export function createAuthRouter({ db, jwtSecret }) {
       }
 
       const { email, password } = req.body || {};
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!email || !password) {
         res.status(400).json({ error: "Email and password are required" });
+        return;
+      }
+      if (!emailRegex.test(email)) {
+        res.status(400).json({ error: "Invalid email address" });
         return;
       }
 
@@ -100,20 +110,30 @@ export function createAuthRouter({ db, jwtSecret }) {
   });
 
   router.post("/password-reset/request", async (req, res) => {
+    console.log("\n[Auth] Got password reset request!");
     const { email } = req.body || {};
+    console.log("[Auth] Request body:", JSON.stringify(req.body));
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) {
       res.status(400).json({ error: "Email is required" });
       return;
     }
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: "Invalid email address" });
+      return;
+    }
 
     const normalizedEmail = String(email).toLowerCase();
+    console.log(`[Auth] Normalized email: ${normalizedEmail}`);
     const user = await db.getUserByEmail(normalizedEmail);
+    console.log(`[Auth] User found:`, user ? user.email : "NO USER FOUND!");
     if (!user) {
       res.status(404).json({ error: "Email not found" });
       return;
     }
 
     const otp = generateOtp();
+    console.log(`[Auth] Generated OTP: ${otp}`);
     const otpHash = sha256Hex(`${user.id}:${otp}`);
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
@@ -124,7 +144,9 @@ export function createAuthRouter({ db, jwtSecret }) {
     });
 
     try {
+      console.log(`[Auth] Sending OTP email to ${normalizedEmail}`);
       await sendOtpEmail(normalizedEmail, otp);
+      console.log(`[Auth] OTP email sent successfully!`);
     } catch (err) {
       console.error("Failed to send email:", err);
       // Optional: Fail the request or just log it?

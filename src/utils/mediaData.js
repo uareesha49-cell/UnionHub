@@ -21,7 +21,7 @@ import Employee from "../assets/images/employee.svg";
 import Nomeeting from "../assets/images/nomeeting.svg";
 import Noresult from "../assets/images/noresult.svg";
 import Officials from "../assets/images/officials.svg";
-import Rightimage from "../assets/images/rightimage.svg";
+import SitePreview from "../assets/images/image.png";
 import Popup from "../assets/images/Popup.svg";
 import Bellicon from "../assets/icons/bellicon.svg";
 import Contracts2 from "../assets/icons/contracts2.svg";
@@ -42,8 +42,10 @@ import Contract from "../assets/images/contract.svg";
 import Pdf1 from "../assets/images/pdf.svg";
 import Download from "../assets/icons/download.svg";
 import Notifications from "../assets/icons/notifications.svg";
-import Camera2 from "../assets/icons/camera2.svg"
+import Camera2 from "../assets/icons/camera2.svg";
+import Rightimage from "../assets/images/rightimage.svg"
 export const mediaData = {
+  Rightimage,
   Camera2,
   Notifications,
   Download,
@@ -88,5 +90,5 @@ export const mediaData = {
   Nomeeting,
   Noresult,
   Officials,
-  Rightimage,
+  SitePreview,
 };

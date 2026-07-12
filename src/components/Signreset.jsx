@@ -5,8 +5,8 @@ export const Signreset = ({ centerHeading, children, contentOffsetClassName = ""
       <div className="w-full h-64 lg:h-full lg:w-1/2 relative shrink-0">
         <img
           src={mediaData.Rightimage}
-          alt="Right"
-          className="w-full h-full object-cover"
+          alt="Union Hub site preview"
+          className="w-full h-full object-cover object-top"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/30" />
         <div className="absolute top-6 left-6 lg:top-10 lg:left-10 flex items-center gap-3">

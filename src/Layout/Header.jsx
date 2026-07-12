@@ -32,6 +32,8 @@ export const Header = () => {
     "/layout/finance-fees": "Fee management",
     "/layout/student-home": "My account",
     "/layout/student-vouchers": "Vouchers",
+    "/layout/student-cgpa": "CGPA calculator",
+    "/layout/tech-timetable": "Timetable",
     "/layout/students": "Students",
     "/layout/admin":"Admin"
   };

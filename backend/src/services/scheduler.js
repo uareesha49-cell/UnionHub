@@ -36,7 +36,7 @@ async function checkReminders(db) {
 
 async function processReminders(db, type, label, minutesBefore, now) {
   const items = await db.getPendingReminders(type);
-  const emails = await db.getAllUserEmails();
+  const emails = await db.getStaffUserEmails();
 
   if (!emails || emails.length === 0) return;
 

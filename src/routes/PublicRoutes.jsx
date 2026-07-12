@@ -21,6 +21,8 @@ import { FinanceEmployeePayroll } from "../Pages/FinanceEmployeePayroll"
 import { Navigate } from "react-router-dom"
 import { StudentMyAccount } from "../Pages/StudentMyAccount"
 import { StudentVouchers } from "../Pages/StudentVouchers"
+import { StudentCgpa } from "../Pages/StudentCgpa"
+import { TechStaffTimetable } from "../Pages/TechStaffTimetable"
 import { Complaints } from "../Pages/Complaints"
 import { RequireAuth } from "../auth/RequireAuth"
 import { RequireRole } from "../auth/RequireRole"
@@ -63,6 +65,15 @@ export const publicRoutes =
         {path:"finance-fees",element:(<RequireRole roles={["finance"]}><FinanceFees/></RequireRole>)},
         {path:"student-home",element:(<RequireRole roles={["student"]}><StudentMyAccount/></RequireRole>)},
         {path:"student-vouchers",element:(<RequireRole roles={["student"]}><StudentVouchers/></RequireRole>)},
+        {path:"student-cgpa",element:(<RequireRole roles={["student"]}><StudentCgpa/></RequireRole>)},
+        {
+          path: "tech-timetable",
+          element: (
+            <RequireRole roles={["tech_staff"]}>
+              <TechStaffTimetable />
+            </RequireRole>
+          ),
+        },
         {
           path: "student-portal",
           element: (

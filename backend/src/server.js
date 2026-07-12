@@ -6,9 +6,16 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Load env from repo root and backend/ (dotenv does not override existing keys)
+console.log("[Server] Loading environment variables...");
 dotenv.config({ path: path.join(__dirname, "../../.env") });
+console.log("[Server] Loaded root .env");
 dotenv.config({ path: path.join(__dirname, "../.env") });
+console.log("[Server] Loaded backend .env");
 dotenv.config();
+
+// Log email configuration after loading env
+console.log("[Server] EMAIL_USER after env load:", process.env.EMAIL_USER);
+console.log("[Server] EMAIL_PASS after env load:", process.env.EMAIL_PASS ? "Set" : "NOT SET");
 
 import { createDb } from "./db.js";
 import { createAuthRouter } from "./routes/auth.js";

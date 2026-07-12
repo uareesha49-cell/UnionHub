@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CircleHelp, LayoutDashboard, Receipt, UserCircle } from "lucide-react";
+import { Calculator, CircleHelp, LayoutDashboard, Receipt, UserCircle } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { useStudentMe } from "../hooks/useStudentMe";
 
@@ -29,6 +29,12 @@ export const StudentMyAccount = () => {
       sub: "Questions and answers",
       Icon: CircleHelp,
     },
+    {
+      to: "/layout/student-cgpa",
+      label: "CGPA calculator",
+      sub: "Live CGPA tool",
+      Icon: Calculator,
+    },
   ];
 
   return (
@@ -42,7 +48,7 @@ export const StudentMyAccount = () => {
             <h2 className="font-montserrat font-semibold text-lg text-[#1E6B78]">My account</h2>
             <p className="text-sm text-grey font-montserrat mt-1">
               Hello, <span className="text-black font-semibold">{displayName}</span>. Use the shortcuts below or the
-              sidebar to open vouchers, your profile, or FAQs.
+              sidebar for vouchers, the CGPA calculator, profile, and FAQs.
             </p>
           </div>
         </div>

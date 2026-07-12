@@ -100,6 +100,7 @@ const Fee = mongoose.models.Fee || mongoose.model("Fee", FeeSchema);
 const ComplaintSchema = new mongoose.Schema({
   id: { type: Number, unique: true, required: true },
   created_by: { type: Number, required: true },
+  assigned_to: { type: Number, required: true },
   subject: { type: String, required: true },
   details: { type: String, required: true },
   status: { type: String, enum: ["open", "resolved"], default: "open" },
@@ -782,11 +783,19 @@ export function createDb({ dbPath }) {
       return doc ? stripFeeLean(doc) : null;
     },
 
-    async createComplaint({ created_by, subject, details }) {
+    async getRecipientsForComplaints() {
+      const users = await User.find({ role: { $in: ["director", "principal", "vice_principal"] } })
+        .select("id email name role")
+        .lean();
+      return users.map((u) => ({ ...u, _id: undefined, __v: undefined }));
+    },
+
+    async createComplaint({ created_by, assigned_to, subject, details }) {
       const subj = String(subject || "").trim();
       const det = String(details || "").trim();
-      if (!subj || !det) {
-        const err = new Error("Subject and details are required");
+      const assignee = Number(assigned_to);
+      if (!subj || !det || !Number.isFinite(assignee)) {
+        const err = new Error("Subject, details, and recipient are required");
         err.code = "INVALID_COMPLAINT";
         throw err;
       }
@@ -795,6 +804,7 @@ export function createDb({ dbPath }) {
       const doc = await Complaint.create({
         id,
         created_by,
+        assigned_to: assignee,
         subject: subj,
         details: det,
         status: "open",
@@ -806,9 +816,15 @@ export function createDb({ dbPath }) {
       return stripComplaintLean(doc.toObject());
     },
 
-    async listComplaintsForDirector() {
-      const docs = await Complaint.find({}).sort({ id: -1 }).lean();
-      const userIds = [...new Set(docs.map((d) => d.created_by).filter((x) => Number.isFinite(Number(x))))];
+    async listComplaintsForUser(userId) {
+      const uid = Number(userId);
+      if (!Number.isFinite(uid)) return [];
+      const docs = await Complaint.find({ assigned_to: uid }).sort({ id: -1 }).lean();
+      const userIds = [...new Set([
+        ...docs.map((d) => d.created_by),
+        ...docs.map((d) => d.assigned_to),
+        ...docs.map((d) => d.resolved_by).filter(Boolean)
+      ].filter((x) => Number.isFinite(Number(x))))];
       const users = await User.find({ id: { $in: userIds } })
         .select("id email name role")
         .lean();
@@ -816,6 +832,8 @@ export function createDb({ dbPath }) {
       return docs.map((d) => ({
         ...stripComplaintLean(d),
         submitter: map.get(d.created_by) || null,
+        assignee: map.get(d.assigned_to) || null,
+        resolver: d.resolved_by ? map.get(d.resolved_by) || null : null,
       }));
     },
 
@@ -823,7 +841,21 @@ export function createDb({ dbPath }) {
       const uid = Number(userId);
       if (!Number.isFinite(uid)) return [];
       const docs = await Complaint.find({ created_by: uid }).sort({ id: -1 }).lean();
-      return docs.map((d) => stripComplaintLean(d));
+      const userIds = [...new Set([
+        ...docs.map((d) => d.created_by),
+        ...docs.map((d) => d.assigned_to),
+        ...docs.map((d) => d.resolved_by).filter(Boolean)
+      ].filter((x) => Number.isFinite(Number(x))))];
+      const users = await User.find({ id: { $in: userIds } })
+        .select("id email name role")
+        .lean();
+      const map = new Map(users.map((u) => [u.id, u]));
+      return docs.map((d) => ({
+        ...stripComplaintLean(d),
+        submitter: map.get(d.created_by) || null,
+        assignee: map.get(d.assigned_to) || null,
+        resolver: d.resolved_by ? map.get(d.resolved_by) || null : null,
+      }));
     },
 
     async getComplaintById(complaintId) {
@@ -833,7 +865,7 @@ export function createDb({ dbPath }) {
       return doc ? stripComplaintLean(doc) : null;
     },
 
-    async markComplaintResolved({ complaintId, directorUserId }) {
+    async markComplaintResolved({ complaintId, resolverUserId }) {
       const id = Number(complaintId);
       if (!Number.isFinite(id)) return null;
       const doc = await Complaint.findOne({ id });
@@ -842,7 +874,7 @@ export function createDb({ dbPath }) {
       const now = nowIso();
       doc.status = "resolved";
       doc.resolved_at = now;
-      doc.resolved_by = directorUserId;
+      doc.resolved_by = resolverUserId;
       doc.updated_at = now;
       await doc.save();
       return stripComplaintLean(doc.toObject());
@@ -851,6 +883,22 @@ export function createDb({ dbPath }) {
     async getAllUserEmails() {
       const users = await User.find({}, "email").lean();
       return users.map((u) => u.email);
+    },
+
+    async getStaffUserEmails() {
+      console.log("[DB] Getting staff user emails...");
+      const users = await User.find(
+        { 
+          role: { 
+            $in: ["principal", "teacher", "employee", "vice_principal", "tech_staff", "finance"] 
+          } 
+        }, 
+        "email role"
+      ).lean();
+      console.log("[DB] Found staff users:", users);
+      const emails = users.map((u) => u.email);
+      console.log("[DB] Staff emails:", emails);
+      return emails;
     },
 
     async getDirectorEmails() {

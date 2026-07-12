@@ -11,8 +11,13 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
 backend/.env
 backend/data
+test-email.js
+test-password.js
+check-db.js
+backend/src/check-users.js
 
 # Editor directories and files
 .vscode/*

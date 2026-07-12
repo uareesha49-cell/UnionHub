@@ -67,8 +67,13 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
     const password = body.password ?? body.Password;
     const roleRaw = body.role ?? body.Role ?? body.userRole;
     const normalizedRole = normalizeRole(roleRaw);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || password === undefined || password === null || String(password).length === 0) {
       res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: "Invalid email address" });
       return;
     }
     if (!normalizedRole) {
@@ -120,8 +125,13 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       .toLowerCase();
     const password = body.password ?? body.Password;
     const name = body.name !== undefined ? body.name : body.Name;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || password === undefined || password === null || String(password).length === 0) {
       res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: "Invalid email address" });
       return;
     }
 
@@ -169,6 +179,11 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
     const body = req.body || {};
     const email = body.email !== undefined ? String(body.email).trim().toLowerCase() : undefined;
     const { password, name } = body;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email !== undefined && !emailRegex.test(email)) {
+      res.status(400).json({ error: "Invalid email address" });
+      return;
+    }
 
     if (email === undefined && password === undefined && name === undefined) {
       res.status(400).json({ error: "No changes provided" });
@@ -222,18 +237,21 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
     res.status(204).end();
   });
 
-  /** Complaints: any authenticated user may submit; only director lists and marks complete. */
+  router.get("/complaint-recipients", async (req, res) => {
+    const recipients = await db.getRecipientsForComplaints();
+    res.json({ recipients });
+  });
+
+  /** Complaints: any authenticated user except director may submit */
   router.post("/complaints", async (req, res) => {
-    if (req.user.role === "director") {
-      res.status(403).json({ error: "Directors cannot submit complaints" });
-      return;
-    }
     const body = req.body || {};
     const subject = body.subject ?? body.title;
     const details = body.details ?? body.message ?? body.body;
+    const assigned_to = body.assigned_to;
     try {
       const complaint = await db.createComplaint({
         created_by: req.user.id,
+        assigned_to,
         subject,
         details,
       });
@@ -248,18 +266,25 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
     }
   });
 
-  /** Own complaints only — any authenticated role (avoids 403 from sharing GET /complaints with director-only setups). */
+  /** Own complaints only — any authenticated role */
   router.get("/my-complaints", async (req, res) => {
     const complaints = await db.listComplaintsByUser(req.user.id);
     res.json({ complaints });
   });
 
-  router.get("/complaints", requireRole(["director"]), async (req, res) => {
-    const complaints = await db.listComplaintsForDirector();
+  /** Complaints assigned to current user (director, principal, vice_principal, tech_staff) */
+  router.get("/my-received-complaints", async (req, res) => {
+    const complaints = await db.listComplaintsForUser(req.user.id);
     res.json({ complaints });
   });
 
-  router.patch("/complaints/:id/complete", requireRole(["director"]), async (req, res) => {
+  /** All complaints (director only, for backwards compatibility) */
+  router.get("/complaints", requireRole(["director"]), async (req, res) => {
+    const docs = await db.listComplaintsForUser(req.user.id);
+    res.json({ complaints: docs });
+  });
+
+  router.patch("/complaints/:id/complete", requireRole(["director", "principal", "vice_principal", "tech_staff"]), async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isFinite(id)) {
       res.status(400).json({ error: "Invalid id" });
@@ -270,9 +295,13 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       res.status(404).json({ error: "Not found" });
       return;
     }
+    if (existing.assigned_to !== req.user.id && req.user.role !== "director") {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
     const updated = await db.markComplaintResolved({
       complaintId: id,
-      directorUserId: req.user.id,
+      resolverUserId: req.user.id,
     });
     res.json({ complaint: updated });
   });
@@ -351,10 +380,15 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
     }
 
     const body = req.body || {};
-    const email = body.email !== undefined ? body.email : body.Email;
+    const email = body.email !== undefined ? String(body.email).trim().toLowerCase() : undefined;
     const roleRaw = body.role !== undefined ? body.role : body.Role;
     const { password, name } = body;
     const normalizedRole = roleRaw === undefined ? undefined : normalizeRole(roleRaw);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email !== undefined && !emailRegex.test(email)) {
+      res.status(400).json({ error: "Invalid email address" });
+      return;
+    }
     if (roleRaw !== undefined && !normalizedRole) {
       res.status(400).json({
         error: "Invalid role.",

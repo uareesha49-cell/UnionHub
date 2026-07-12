@@ -195,7 +195,7 @@ export function createContentRouter({ db, jwtSecret }) {
       // Run in background
       (async () => {
         try {
-          const emails = await db.getAllUserEmails();
+          const emails = await db.getStaffUserEmails();
           if (emails && emails.length > 0) {
             const contentTitle = req.body.title || req.body.pollName || req.body.name || "New Content";
             const readableType = notificationTypes[type];
@@ -253,7 +253,7 @@ export function createContentRouter({ db, jwtSecret }) {
     if (type === "meetings" && req.body.status !== "completed") {
       (async () => {
         try {
-          const emails = await db.getAllUserEmails();
+          const emails = await db.getStaffUserEmails();
           if (emails && emails.length > 0) {
             const contentTitle = item.data.title || "Meeting";
             const subject = `Meeting Update: ${contentTitle}`;
