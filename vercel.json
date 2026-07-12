@@ -1,17 +1,26 @@
 {
   "version": 2,
-  "services": {
-    "frontend": {
-      "entrypoint": ".",
-      "routePrefix": "/",
-      "framework": "vite"
+  "builds": [
+    {
+      "src": "backend/src/server.js",
+      "use": "@vercel/node"
     },
-    "backend": {
-      "entrypoint": "backend/src/server.js",
-      "routePrefix": "/api",
-      "framework": "express"
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
     }
-  },
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/src/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/$1"
+    }
+  ],
   "env": {
     "VITE_VERCEL": "1"
   }
