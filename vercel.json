@@ -1,5 +1,15 @@
 {
   "version": 2,
+  "functions": {
+    "backend/src/server.js": {
+      "runtime": "@vercel/node"
+    }
+  },
+  "routes": [
+    { "src": "/api/(.*)", "dest": "backend/src/server.js" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ],
   "env": {
     "VITE_VERCEL": "1"
   }
