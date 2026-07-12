@@ -1,14 +1,25 @@
 {
   "version": 2,
-  "functions": {
-    "backend/src/server.js": {
-      "runtime": "@vercel/node"
+  "builds": [
+    {
+      "src": "backend/src/server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
     }
-  },
+  ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "backend/src/server.js" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/src/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/$1"
+    }
   ],
   "env": {
     "VITE_VERCEL": "1"
