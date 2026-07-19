@@ -10,6 +10,13 @@ import {
   Table2,
   UserCircle,
   Wallet,
+  Building2,
+  Users,
+  UserCheck,
+  GraduationCap,
+  BriefcaseBusiness,
+  Cpu,
+  DollarSign,
 } from "lucide-react";
 import { mediaData } from "../utils/mediaData";
 import { useAuth } from "../auth/AuthContext";
@@ -22,6 +29,20 @@ const staffPayrollRoles = [
   "tech_staff",
   "employee",
   "finance",
+];
+
+/** Admin role: sidebar entries */
+const adminPages = [
+  { name: "Dashboard", route: "/layout/admin-dashboard", LucideIcon: LayoutDashboard },
+  { name: "Institute", route: "/layout/admin-institute", LucideIcon: Building2 },
+  { name: "Directors", route: "/layout/admin-directors", LucideIcon: UserCheck },
+  { name: "Principals", route: "/layout/admin-principals", LucideIcon: Users },
+  { name: "Vice Principals", route: "/layout/admin-vice-principals", LucideIcon: UserCheck },
+  { name: "Students", route: "/layout/admin-students", LucideIcon: GraduationCap },
+  { name: "Teachers", route: "/layout/admin-teachers", LucideIcon: BriefcaseBusiness },
+  { name: "Tech Staff", route: "/layout/admin-tech-staff", LucideIcon: Cpu },
+  { name: "Finance", route: "/layout/admin-finance", LucideIcon: DollarSign },
+  { name: "Profile", route: "/layout/admin", LucideIcon: UserCircle },
 ];
 
 /** Student role: sidebar entries (same chrome as staff). */
@@ -56,7 +77,9 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
   const navigate = useNavigate();
   const role = auth.user?.role;
   const visiblePages =
-    role === "student"
+    role === "admin"
+      ? adminPages
+      : role === "student"
       ? studentPages
       : staffPages.filter((p) => !p.roles || (role && p.roles.includes(role)));
 
@@ -103,7 +126,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
             >
               {({ isActive }) => (
                 <div
-                  className={`flex items-center gap-2 px-3 py-1.5 mx-2 mb-1 rounded-r-lg cursor-pointer transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-1.5 mx-2 mb-1 rounded-r-lg cursor-pointer transition-colors ${
                     isActive
                       ? "bg-[#33669926] text-[#1E6B78]"
                       : "text-black hover:bg-[#E8E8E8]"
@@ -111,8 +134,10 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
                 >
                   {page.LucideIcon ? (
                     <page.LucideIcon className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden />
-                  ) : (
+                  ) : page.icon ? (
                     <img src={page.icon} alt="" className="w-5 h-5 shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 shrink-0" />
                   )}
                   <span className="text-sm">{page.name}</span>
                 </div>

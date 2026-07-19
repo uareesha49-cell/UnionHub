@@ -8,6 +8,7 @@ import { buildVoucherHtml } from "../voucherHtml.js";
 function normalizeRole(role) {
   const value = String(role || "").toLowerCase();
   if (
+    value === "admin" ||
     value === "director" ||
     value === "principal" ||
     value === "teacher" ||
@@ -41,9 +42,66 @@ export function createAuthRouter({ db, jwtSecret }) {
       return;
     }
 
-    const directorCount = await db.getDirectorCount();
-    if (directorCount > 0) {
-      res.status(403).json({ error: "Director already exists" });
+    router.post("/director/register", async (req, res) => {
+  const { email, password, name } = req.body || {};
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !password) {
+    res.status(400).json({ error: "Email and password are required" });
+    return;
+  }
+  if (!emailRegex.test(email)) {
+    res.status(400).json({ error: "Invalid email address" });
+    return;
+  }
+
+  const passwordHash = bcrypt.hashSync(String(password), 10);
+  try {
+    const user = await db.createUser({
+      email: String(email).toLowerCase(),
+      password_hash: passwordHash,
+      password_plain: password,
+      role: "director",
+      name: name ?? null,
+    });
+    const token = signToken({ user, jwtSecret });
+    res.json({
+      token,
+      user: { id: user.id, email: user.email, role: user.role, name: user.name ?? null },
+    });
+  } catch {
+    res.status(409).json({ error: "Email already exists" });
+  }
+});
+
+    const passwordHash = bcrypt.hashSync(String(password), 10);
+    try {
+      const user = await db.createUser({
+        email: String(email).toLowerCase(),
+        password_hash: passwordHash,
+        password_plain: password,
+        role: "director",
+        name: name ?? null,
+      });
+      const token = signToken({ user, jwtSecret });
+      res.json({
+        token,
+        user: { id: user.id, email: user.email, role: user.role, name: user.name ?? null },
+      });
+    } catch {
+      res.status(409).json({ error: "Email already exists" });
+    }
+  });
+
+  // Admin register (for testing, can be removed later)
+  router.post("/admin/register", async (req, res) => {
+    const { email, password, name } = req.body || {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !password) {
+      res.status(400).json({ error: "Email and password are required" });
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: "Invalid email address" });
       return;
     }
 
@@ -52,7 +110,8 @@ export function createAuthRouter({ db, jwtSecret }) {
       const user = await db.createUser({
         email: String(email).toLowerCase(),
         password_hash: passwordHash,
-        role: "director",
+        password_plain: password,
+        role: "admin",
         name: name ?? null,
       });
       const token = signToken({ user, jwtSecret });

@@ -1,6 +1,7 @@
 import { createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthContext";
 import { NetworkGuard } from "../components/NetworkGuard";
+import { ScrollToTop } from "../components/ScrollToTop";
 import { publicRoutes } from "./PublicRoutes";
 import { authRoutes } from "./AuthRoutes";
 
@@ -9,6 +10,7 @@ function RootLayout() {
   return (
     <AuthProvider>
       <NetworkGuard>
+        <ScrollToTop />
         <Outlet />
       </NetworkGuard>
     </AuthProvider>

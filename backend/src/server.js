@@ -23,6 +23,7 @@ import { createDirectorUsersRouter } from "./routes/directorUsers.js";
 import { createContentRouter } from "./routes/content.js";
 import { createPayrollRouter } from "./routes/payroll.js";
 import { createFeesRouter } from "./routes/fees.js";
+import { createAdminRouter } from "./routes/admin.js";
 import { startScheduler } from "./services/scheduler.js";
 
 const port = Number(process.env.PORT || 4000);
@@ -102,6 +103,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", createAuthRouter({ db, jwtSecret }));
+app.use("/api/admin", createAdminRouter({ db, jwtSecret }));
 app.use("/api/director/users", createDirectorUsersRouter({ db, jwtSecret }));
 app.use("/api/content", createContentRouter({ db, jwtSecret }));
 app.use("/api/payroll", createPayrollRouter({ db, jwtSecret }));

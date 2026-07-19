@@ -20,7 +20,13 @@ export const Signreset = ({ centerHeading, children, contentOffsetClassName = ""
           </h2>
         </div>
       </div>
-      <div className="flex-1 flex items-start justify-center px-4 sm:px-8 lg:px-16 pt-8 pb-4 lg:pt-16 lg:pb-6">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 lg:px-16 pt-8 pb-4 lg:pt-16 lg:pb-6 overflow-y-auto
+        [&::-webkit-scrollbar]:w-2
+        [&::-webkit-scrollbar-track]:bg-gray-100
+        [&::-webkit-scrollbar-thumb]:bg-gray-300
+        [&::-webkit-scrollbar-thumb]:rounded-full
+        [&::-webkit-scrollbar-thumb:hover]:bg-gray-400
+      ">
         <div className={`w-full max-w-md ${contentOffsetClassName}`.trim()}>
           <div className="hidden items-center gap-3 mb-8">
             <img
@@ -33,7 +39,7 @@ export const Signreset = ({ centerHeading, children, contentOffsetClassName = ""
             </h2>
           </div>
 
-          <h1 className="text-3xl sm:text-[32px] font-bold mb-6 text-gray-900 font-montserrat text-center">
+          <h1 className="text-3xl sm:text-[32px] font-bold mb-6 text-gray-700 font-montserrat text-center">
             {centerHeading}
           </h1>
 

@@ -633,6 +633,16 @@ export function createDb({ dbPath }) {
       });
     },
 
+    async listAllUsers() {
+      const users = await User.find({})
+        .sort({ id: -1 })
+        .lean();
+      return users.map(u => {
+        const { _id, __v, password_hash, ...rest } = u;
+        return rest;
+      });
+    },
+
     async listPayrollsForUser(userId) {
       const uid = Number(userId);
       if (!Number.isFinite(uid)) return [];

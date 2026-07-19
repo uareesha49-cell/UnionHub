@@ -35,7 +35,16 @@ export const Header = () => {
     "/layout/student-cgpa": "CGPA calculator",
     "/layout/tech-timetable": "Timetable",
     "/layout/students": "Students",
-    "/layout/admin":"Admin"
+    "/layout/admin":"Admin",
+    "/layout/admin-dashboard":"Admin Dashboard",
+    "/layout/admin-institute":"Institute",
+    "/layout/admin-directors":"Directors",
+    "/layout/admin-principals":"Principals",
+    "/layout/admin-vice-principals":"Vice Principals",
+    "/layout/admin-students":"Students",
+    "/layout/admin-teachers":"Teachers",
+    "/layout/admin-tech-staff":"Tech Staff",
+    "/layout/admin-finance":"Finance"
   };
 
   const title =

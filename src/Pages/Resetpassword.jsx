@@ -26,7 +26,7 @@ export const Resetpassword = () => {
 
   return (
     <Signreset centerHeading="Reset Password" contentOffsetClassName="mt-14">
-      <h4 className="text-grey text-center mb-4 font-montserrat font-semibold">
+      <h4 className="text-gray-500 text-center mb-4 font-montserrat font-semibold">
         Please enter your email to reset your password
       </h4>
 
