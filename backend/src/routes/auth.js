@@ -31,7 +31,7 @@ export function createAuthRouter({ db, jwtSecret }) {
   const generateResetToken = () => crypto.randomBytes(32).toString("hex");
 
   router.post("/director/register", async (req, res) => {
-    const { email, password, name } = req.body || {};
+    const { email, password, name, institute_name } = req.body || {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !password) {
       res.status(400).json({ error: "Email and password are required" });
@@ -42,37 +42,6 @@ export function createAuthRouter({ db, jwtSecret }) {
       return;
     }
 
-    router.post("/director/register", async (req, res) => {
-  const { email, password, name } = req.body || {};
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!email || !password) {
-    res.status(400).json({ error: "Email and password are required" });
-    return;
-  }
-  if (!emailRegex.test(email)) {
-    res.status(400).json({ error: "Invalid email address" });
-    return;
-  }
-
-  const passwordHash = bcrypt.hashSync(String(password), 10);
-  try {
-    const user = await db.createUser({
-      email: String(email).toLowerCase(),
-      password_hash: passwordHash,
-      password_plain: password,
-      role: "director",
-      name: name ?? null,
-    });
-    const token = signToken({ user, jwtSecret });
-    res.json({
-      token,
-      user: { id: user.id, email: user.email, role: user.role, name: user.name ?? null },
-    });
-  } catch {
-    res.status(409).json({ error: "Email already exists" });
-  }
-});
-
     const passwordHash = bcrypt.hashSync(String(password), 10);
     try {
       const user = await db.createUser({
@@ -81,11 +50,18 @@ export function createAuthRouter({ db, jwtSecret }) {
         password_plain: password,
         role: "director",
         name: name ?? null,
+        institute_name: institute_name ?? name ?? null, // Use institute_name if provided, else name
       });
       const token = signToken({ user, jwtSecret });
       res.json({
         token,
-        user: { id: user.id, email: user.email, role: user.role, name: user.name ?? null },
+        user: { 
+          id: user.id, 
+          email: user.email, 
+          role: user.role, 
+          name: user.name ?? null,
+          institute_name: user.institute_name ?? null,
+        },
       });
     } catch {
       res.status(409).json({ error: "Email already exists" });
@@ -156,7 +132,7 @@ export function createAuthRouter({ db, jwtSecret }) {
       }
 
       const token = signToken({ user, jwtSecret });
-      res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.name ?? null } });
+      res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.name ?? null, institute_name: user.institute_name ?? null } });
     } catch (e) {
       console.error("Login error:", e);
       res.status(500).json({
@@ -356,6 +332,17 @@ export function createAuthRouter({ db, jwtSecret }) {
       res.send(html);
     }
   );
+
+  // Validate institute name
+  router.get("/institutes/validate", async (req, res) => {
+    const { name } = req.query || {};
+    if (!name) {
+      res.status(400).json({ error: "Institute name is required" });
+      return;
+    }
+    const exists = await db.instituteNameExists(name);
+    res.json({ exists });
+  });
 
   return router;
 }

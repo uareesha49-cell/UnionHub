@@ -33,12 +33,14 @@ export const Students = () => {
   const [createEmail, setCreateEmail] = useState("");
   const [createPassword, setCreatePassword] = useState("");
   const [createConfirmPassword, setCreateConfirmPassword] = useState("");
+  const [createInstituteName, setCreateInstituteName] = useState("");
 
   const [editUserId, setEditUserId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [editConfirmPassword, setEditConfirmPassword] = useState("");
+  const [editInstituteName, setEditInstituteName] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,6 +61,7 @@ export const Students = () => {
     setCreateEmail("");
     setCreatePassword("");
     setCreateConfirmPassword("");
+    setCreateInstituteName("");
     setShowForm(true);
   };
 
@@ -72,6 +75,7 @@ export const Students = () => {
     setEditEmail(u?.email ?? String(row?.Email?.value ?? ""));
     setEditPassword("");
     setEditConfirmPassword("");
+    setEditInstituteName(u?.institute_name ?? "");
     setShowForm(true);
   };
 
@@ -95,6 +99,7 @@ export const Students = () => {
           email: emailNorm,
           password: createPassword,
           name: String(createName || "").trim() || undefined,
+          institute_name: createInstituteName || undefined,
         },
       });
       setShowForm(false);
@@ -128,6 +133,7 @@ export const Students = () => {
           email: emailNorm,
           name: editName.trim() === "" ? null : editName.trim(),
           password: editPassword ? editPassword : undefined,
+          institute_name: editInstituteName || undefined,
         },
       });
       setShowForm(false);
@@ -213,6 +219,15 @@ export const Students = () => {
       onChange: (e) => setCreateEmail(e.target.value),
     },
     {
+      label: "Institute Name",
+      placeholder: "Enter institute name",
+      type: "text",
+      fullWidth: true,
+      icon: mediaData.User,
+      value: createInstituteName,
+      onChange: (e) => setCreateInstituteName(e.target.value),
+    },
+    {
       label: "Password",
       placeholder: "Enter password",
       type: "password",
@@ -250,6 +265,15 @@ export const Students = () => {
       icon: mediaData.Sms,
       value: editEmail,
       onChange: (e) => setEditEmail(e.target.value),
+    },
+    {
+      label: "Institute Name",
+      placeholder: "Enter institute name",
+      type: "text",
+      fullWidth: true,
+      icon: mediaData.User,
+      value: editInstituteName,
+      onChange: (e) => setEditInstituteName(e.target.value),
     },
     {
       label: "New Password",

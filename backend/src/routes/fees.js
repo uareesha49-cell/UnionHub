@@ -26,12 +26,20 @@ export function createFeesRouter({ db, jwtSecret }) {
   });
 
   router.get("/students", requireRole(["finance"]), async (req, res) => {
-    const students = await db.listStudentUsersForFees();
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    const allStudents = await db.listStudentUsersForFees();
+    const students = req.user.role === "admin" 
+      ? allStudents 
+      : allStudents.filter(u => u.institute_name === institute_name);
     res.json({ students });
   });
 
   router.get("/", requireRole(["finance"]), async (req, res) => {
-    const fees = await db.listFeesForFinance();
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    const filterParams = req.user.role === "admin" ? {} : { institute_name };
+    const fees = await db.listFeesForFinance(filterParams);
     res.json({ fees });
   });
 
@@ -69,7 +77,13 @@ export function createFeesRouter({ db, jwtSecret }) {
       res.status(400).json({ error: "Invalid fee id" });
       return;
     }
-    const fee = await db.getFeeById(feeId);
+    
+    // Get current user's institute_name
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    const filterParams = req.user.role === "admin" ? {} : { institute_name };
+    const fee = await db.getFeeById(feeId, filterParams);
+    
     if (!fee) {
       res.status(404).json({ error: "Not found" });
       return;
@@ -79,7 +93,7 @@ export function createFeesRouter({ db, jwtSecret }) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
-    if (role !== "student" && role !== "finance") {
+    if (role !== "student" && role !== "finance" && role !== "admin") {
       res.status(403).json({ error: "Forbidden" });
       return;
     }

@@ -27,11 +27,13 @@ export const Employees = () => {
   const [createEmail, setCreateEmail] = useState("");
   const [createPassword, setCreatePassword] = useState("");
   const [createConfirmPassword, setCreateConfirmPassword] = useState("");
+  const [createInstituteName, setCreateInstituteName] = useState("");
   const [editUserId, setEditUserId] = useState(null);
   const [editRole, setEditRole] = useState("teacher");
   const [editEmail, setEditEmail] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [editConfirmPassword, setEditConfirmPassword] = useState("");
+  const [editInstituteName, setEditInstituteName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadUsers = useCallback(async () => {
@@ -51,11 +53,13 @@ export const Employees = () => {
     setEditEmail("");
     setEditPassword("");
     setEditConfirmPassword("");
+    setEditInstituteName("");
     const defaultCreateRole = isVicePrincipal ? "finance" : isPrincipal ? "teacher" : "principal";
     setCreateRole(defaultCreateRole);
     setCreateEmail("");
     setCreatePassword("");
     setCreateConfirmPassword("");
+    setCreateInstituteName("");
     setShowForm(true); // 👈 replaces table with form
   };
 
@@ -152,6 +156,15 @@ export const Employees = () => {
       onChange: (e) => setCreateEmail(e.target.value),
     },
     {
+      label: "Institute Name",
+      placeholder: "Enter institute name",
+      type: "text",
+      fullWidth: true,
+      icon: mediaData.User,
+      value: createInstituteName,
+      onChange: (e) => setCreateInstituteName(e.target.value),
+    },
+    {
       label: "Password",
       placeholder: "Enter Password",
       fullWidth: false,
@@ -195,7 +208,12 @@ export const Employees = () => {
       const created = await apiRequest("/director/users", {
         method: "POST",
         token: auth.token,
-        body: { email: emailNorm, password: createPassword, role: roleSlug },
+        body: { 
+          email: emailNorm, 
+          password: createPassword, 
+          role: roleSlug,
+          institute_name: createInstituteName || undefined,
+        },
       });
       const createdUser = created?.user
         ? {
@@ -232,6 +250,9 @@ export const Employees = () => {
     setEditRole(String(row?.Role?.value ?? "teacher"));
     setEditPassword("");
     setEditConfirmPassword("");
+    // Find the user in the users array to get the institute_name
+    const user = users.find(u => u.id === row?.__id);
+    setEditInstituteName(user?.institute_name ?? "");
     setShowForm(true);
   };
 
@@ -259,6 +280,7 @@ export const Employees = () => {
           email: emailNorm,
           role: roleSlug,
           password: editPassword ? editPassword : undefined,
+          institute_name: editInstituteName || undefined,
         },
       });
       setShowForm(false);
@@ -373,6 +395,15 @@ export const Employees = () => {
                     icon: mediaData.Sms,
                     value: editEmail,
                     onChange: (e) => setEditEmail(e.target.value),
+                  },
+                  {
+                    label: "Institute Name",
+                    placeholder: "Enter institute name",
+                    type: "text",
+                    fullWidth: true,
+                    icon: mediaData.User,
+                    value: editInstituteName,
+                    onChange: (e) => setEditInstituteName(e.target.value),
                   },
                   {
                     label: "New Password",

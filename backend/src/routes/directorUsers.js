@@ -55,7 +55,11 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
   };
 
   router.get("/", requireRole(["director", "principal", "vice_principal"]), async (req, res) => {
-    const users = await db.listUsersForManagement(req.user.role);
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    const allUsers = await db.listUsersForManagement(req.user.role);
+    // Filter by institute (admin sees all)
+    const users = req.user.role === "admin" ? allUsers : allUsers.filter(u => u.institute_name === institute_name);
     res.json({ users });
   });
 
@@ -67,6 +71,7 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
     const password = body.password ?? body.Password;
     const roleRaw = body.role ?? body.Role ?? body.userRole;
     const normalizedRole = normalizeRole(roleRaw);
+    const { name, institute_name } = body;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || password === undefined || password === null || String(password).length === 0) {
       res.status(400).json({ error: "Email and password are required" });
@@ -90,6 +95,10 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       return;
     }
 
+    // Get the creator's institute name to use for the new user (if not provided)
+    const creator = await db.getUserById(req.user.id);
+    const finalInstituteName = institute_name ?? creator?.institute_name ?? null;
+
     const passwordHash = bcrypt.hashSync(String(password), 10);
     try {
       const user = await db.createUser({
@@ -98,12 +107,16 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
         password_plain: String(password),
         role: normalizedRole,
         created_by: req.user.id,
+        name: name ?? null,
+        institute_name: finalInstituteName,
       });
       res.status(201).json({
         user: {
           id: user.id,
           email: user.email,
           role: user.role,
+          name: user.name ?? null,
+          institute_name: user.institute_name ?? null,
           created_by: user.created_by,
         },
       });
@@ -114,7 +127,11 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
 
   /** Student accounts (same router as staff user APIs — avoids missing /api/students on some deployments). */
   router.get("/students", requireRole(["director", "principal", "vice_principal"]), async (req, res) => {
-    const students = await db.listStudentsForManagement();
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    const allStudents = await db.listStudentsForManagement();
+    // Filter by institute (admin sees all)
+    const students = req.user.role === "admin" ? allStudents : allStudents.filter(u => u.institute_name === institute_name);
     res.json({ students });
   });
 
@@ -125,6 +142,7 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       .toLowerCase();
     const password = body.password ?? body.Password;
     const name = body.name !== undefined ? body.name : body.Name;
+    const { institute_name } = body;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || password === undefined || password === null || String(password).length === 0) {
       res.status(400).json({ error: "Email and password are required" });
@@ -135,6 +153,10 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       return;
     }
 
+    // Get the creator's institute name to use for the new student (if not provided)
+    const creator = await db.getUserById(req.user.id);
+    const finalInstituteName = institute_name ?? creator?.institute_name ?? null;
+
     const passwordHash = bcrypt.hashSync(String(password), 10);
     try {
       const user = await db.createUser({
@@ -144,6 +166,7 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
         role: "student",
         created_by: req.user.id,
         name: name != null && String(name).trim() ? String(name).trim() : null,
+        institute_name: finalInstituteName,
       });
       res.status(201).json({
         user: {
@@ -151,6 +174,7 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
           email: user.email,
           role: user.role,
           name: user.name ?? null,
+          institute_name: user.institute_name ?? null,
           created_by: user.created_by,
         },
       });
@@ -170,22 +194,32 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       res.status(400).json({ error: "Invalid id" });
       return;
     }
+    
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    
     const current = await db.getUserById(id);
     if (!current || current.role !== "student") {
       res.status(404).json({ error: "Not found" });
       return;
     }
+    
+    // Check if student is in same institute (unless admin)
+    if (req.user.role !== "admin" && current.institute_name !== institute_name) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
 
     const body = req.body || {};
     const email = body.email !== undefined ? String(body.email).trim().toLowerCase() : undefined;
-    const { password, name } = body;
+    const { password, name, institute_name: newInstituteName } = body;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email !== undefined && !emailRegex.test(email)) {
       res.status(400).json({ error: "Invalid email address" });
       return;
     }
 
-    if (email === undefined && password === undefined && name === undefined) {
+    if (email === undefined && password === undefined && name === undefined && newInstituteName === undefined) {
       res.status(400).json({ error: "No changes provided" });
       return;
     }
@@ -203,6 +237,7 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
         password_hash: nextPasswordHash,
         password_plain: password ? String(password) : undefined,
         name,
+        institute_name: newInstituteName,
       });
       if (!updated) {
         res.status(404).json({ error: "Not found" });
@@ -224,11 +259,22 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       res.status(400).json({ error: "Invalid id" });
       return;
     }
+    
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    
     const current = await db.getUserById(id);
     if (!current || current.role !== "student") {
       res.status(404).json({ error: "Not found" });
       return;
     }
+    
+    // Check if student is in same institute (unless admin)
+    if (req.user.role !== "admin" && current.institute_name !== institute_name) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    
     const ok = await db.deleteUserById(id);
     if (!ok) {
       res.status(404).json({ error: "Not found" });
@@ -238,7 +284,15 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
   });
 
   router.get("/complaint-recipients", async (req, res) => {
-    const recipients = await db.getRecipientsForComplaints();
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    
+    const allRecipients = await db.getRecipientsForComplaints();
+    // Filter by institute (admin sees all)
+    const recipients = req.user.role === "admin" 
+      ? allRecipients 
+      : allRecipients.filter(u => u.institute_name === institute_name);
+    
     res.json({ recipients });
   });
 
@@ -368,12 +422,22 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       res.status(400).json({ error: "Invalid id" });
       return;
     }
+    
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
 
     const current = await db.getUserById(id);
     if (!current) {
       res.status(404).json({ error: "Not found" });
       return;
     }
+    
+    // Check if user is in same institute (unless admin)
+    if (req.user.role !== "admin" && current.institute_name !== institute_name) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    
     if (!canManageRole(req.user.role, current.role)) {
       res.status(403).json({ error: "Forbidden" });
       return;
@@ -382,7 +446,7 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
     const body = req.body || {};
     const email = body.email !== undefined ? String(body.email).trim().toLowerCase() : undefined;
     const roleRaw = body.role !== undefined ? body.role : body.Role;
-    const { password, name } = body;
+    const { password, name, institute_name: newInstituteName } = body;
     const normalizedRole = roleRaw === undefined ? undefined : normalizeRole(roleRaw);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email !== undefined && !emailRegex.test(email)) {
@@ -403,7 +467,7 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       return;
     }
 
-    if (email === undefined && normalizedRole === undefined && password === undefined && name === undefined) {
+    if (email === undefined && normalizedRole === undefined && password === undefined && name === undefined && newInstituteName === undefined) {
       res.status(400).json({ error: "No changes provided" });
       return;
     }
@@ -422,6 +486,7 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
         password_hash: nextPasswordHash,
         password_plain: password ? String(password) : undefined,
         name,
+        institute_name: newInstituteName,
       });
       if (!updated) {
         res.status(404).json({ error: "Not found" });
@@ -443,12 +508,22 @@ export function createDirectorUsersRouter({ db, jwtSecret }) {
       res.status(400).json({ error: "Invalid id" });
       return;
     }
+    
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
 
     const current = await db.getUserById(id);
     if (!current) {
       res.status(404).json({ error: "Not found" });
       return;
     }
+    
+    // Check if user is in same institute (unless admin)
+    if (req.user.role !== "admin" && current.institute_name !== institute_name) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    
     if (!canManageRole(req.user.role, current.role)) {
       res.status(403).json({ error: "Forbidden" });
       return;

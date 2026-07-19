@@ -45,6 +45,10 @@ export function createPayrollRouter({ db, jwtSecret }) {
       res.status(400).json({ error: "Invalid user id" });
       return;
     }
+    
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    
     const target = await db.getUserById(userId);
     if (!target) {
       res.status(404).json({ error: "User not found" });
@@ -54,6 +58,13 @@ export function createPayrollRouter({ db, jwtSecret }) {
       res.status(403).json({ error: "Cannot manage payroll for finance accounts" });
       return;
     }
+    
+    // Check if target user is in same institute (unless admin)
+    if (req.user.role !== "admin" && target.institute_name !== institute_name) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    
     const rows = await db.listPayrollsForUser(userId);
     const periods = rows.map((payroll) => ({
       payroll,
@@ -62,8 +73,11 @@ export function createPayrollRouter({ db, jwtSecret }) {
     res.json({ user: { id: target.id, email: target.email, role: target.role }, periods });
   });
 
-  router.get("/", requireRole(["finance"]), async (_req, res) => {
-    const data = await db.listPayrollWithUsers();
+  router.get("/", requireRole(["finance"]), async (req, res) => {
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    const filterParams = req.user.role === "admin" ? {} : { institute_name };
+    const data = await db.listPayrollWithUsers(filterParams);
     res.json(data);
   });
 
@@ -73,6 +87,9 @@ export function createPayrollRouter({ db, jwtSecret }) {
       res.status(400).json({ error: "Invalid user id" });
       return;
     }
+    
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
 
     const target = await db.getUserById(userId);
     if (!target) {
@@ -81,6 +98,12 @@ export function createPayrollRouter({ db, jwtSecret }) {
     }
     if (target.role === "finance") {
       res.status(403).json({ error: "Cannot manage payroll for finance accounts" });
+      return;
+    }
+    
+    // Check if target user is in same institute (unless admin)
+    if (req.user.role !== "admin" && target.institute_name !== institute_name) {
+      res.status(403).json({ error: "Forbidden" });
       return;
     }
 

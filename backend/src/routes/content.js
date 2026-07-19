@@ -39,7 +39,15 @@ export function createContentRouter({ db, jwtSecret }) {
     if (!["principal", "vice_principal"].includes(user.role)) return;
 
     try {
-      const emails = await db.getDirectorEmails();
+      // Get current user's institute_name
+      const currentUser = await db.getUserById(user.id);
+      const institute_name = currentUser?.institute_name ?? null;
+      
+      // Get all directors and filter by institute
+      const allUsers = await db.listAllUsers();
+      const instituteDirectors = allUsers.filter(u => u.role === "director" && u.institute_name === institute_name);
+      const emails = instituteDirectors.map(u => u.email);
+      
       if (!emails || emails.length === 0) return;
 
       const readableType = notificationTypes[type] || type;
@@ -91,9 +99,14 @@ export function createContentRouter({ db, jwtSecret }) {
       return;
     }
 
+    // Get current user's institute_name
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    
     // Lock mechanism or atomic update would be ideal, but for now we use read-modify-write
     // Since this is a simple implementation using JSON storage
-    const item = await db.getContentById("votes", id);
+    const filterParams = req.user.role === "admin" ? {} : { institute_name };
+    const item = await db.getContentById("votes", id, filterParams);
     if (!item) {
       res.status(404).json({ error: "Poll not found" });
       return;
@@ -130,7 +143,15 @@ export function createContentRouter({ db, jwtSecret }) {
       res.status(404).json({ error: "Not found" });
       return;
     }
-    const items = await db.listContentByType(type);
+    
+    // Get current user's institute_name to filter content
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    
+    // Get filtered items (admin sees all)
+    const filterParams = req.user.role === "admin" ? {} : { institute_name };
+    const items = await db.listContentByType(type, filterParams);
+    
     if (type === "notifications") {
       const role = req.user?.role;
       const email = req.user?.email;
@@ -167,7 +188,15 @@ export function createContentRouter({ db, jwtSecret }) {
       res.status(400).json({ error: "Invalid id" });
       return;
     }
-    const item = await db.getContentById(type, id);
+    
+    // Get current user's institute_name to filter content
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    
+    // Get filtered item (admin sees all)
+    const filterParams = req.user.role === "admin" ? {} : { institute_name };
+    const item = await db.getContentById(type, id, filterParams);
+    
     if (!item) {
       res.status(404).json({ error: "Not found" });
       return;
@@ -195,7 +224,15 @@ export function createContentRouter({ db, jwtSecret }) {
       // Run in background
       (async () => {
         try {
-          const emails = await db.getStaffUserEmails();
+          // Get current user's institute_name
+          const currentUser = await db.getUserById(req.user.id);
+          const institute_name = currentUser?.institute_name ?? null;
+          
+          // Get all staff and filter by institute
+          const allStaff = await db.listUsersForManagement("director");
+          const instituteStaff = allStaff.filter(u => u.institute_name === institute_name);
+          const emails = instituteStaff.map(u => u.email);
+          
           if (emails && emails.length > 0) {
             const contentTitle = req.body.title || req.body.pollName || req.body.name || "New Content";
             const readableType = notificationTypes[type];
@@ -238,6 +275,16 @@ export function createContentRouter({ db, jwtSecret }) {
       return;
     }
 
+    // Check institute_name
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    const filterParams = req.user.role === "admin" ? {} : { institute_name };
+    const checkItem = await db.getContentById(type, id, filterParams);
+    if (!checkItem) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
     if (type === "meetings" && req.body.status !== "completed") {
       req.body.reminderSent = false;
     }
@@ -253,7 +300,11 @@ export function createContentRouter({ db, jwtSecret }) {
     if (type === "meetings" && req.body.status !== "completed") {
       (async () => {
         try {
-          const emails = await db.getStaffUserEmails();
+          // Get staff emails only for this institute
+          const allStaff = await db.listUsersForManagement("director"); // Get all manageable users
+          const instituteStaff = allStaff.filter(u => u.institute_name === institute_name);
+          const emails = instituteStaff.map(u => u.email);
+          
           if (emails && emails.length > 0) {
             const contentTitle = item.data.title || "Meeting";
             const subject = `Meeting Update: ${contentTitle}`;
@@ -294,8 +345,17 @@ export function createContentRouter({ db, jwtSecret }) {
       return;
     }
 
+    // Check institute_name
+    const currentUser = await db.getUserById(req.user.id);
+    const institute_name = currentUser?.institute_name ?? null;
+    const filterParams = req.user.role === "admin" ? {} : { institute_name };
+
     // Fetch item before deletion for notification
-    const existing = await db.getContentById(type, id);
+    const existing = await db.getContentById(type, id, filterParams);
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
 
     const ok = await db.deleteContent({ type, id });
     if (!ok) {

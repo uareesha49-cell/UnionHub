@@ -37,7 +37,12 @@ export const InstituteSignup = () => {
           try {
             await apiRequest("/auth/director/register", {
               method: "POST",
-              body: { name: values.name, email: values.email, password: values.password },
+              body: { 
+                name: values.name, 
+                email: values.email, 
+                password: values.password,
+                institute_name: values.name, // Use the institute name as institute_name
+              },
             });
             toast.success("Account created successfully! Please login.");
             navigate("/login");

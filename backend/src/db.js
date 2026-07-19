@@ -21,6 +21,7 @@ const UserSchema = new mongoose.Schema({
   password_plain: { type: String }, // Storing plain text password for visibility
   role: { type: String, required: true },
   name: String,
+  institute_name: String,
   created_by: Number,
   created_at: String,
   updated_at: String,
@@ -77,6 +78,7 @@ const PayrollSchema = new mongoose.Schema({
   fines_cuts: { type: [PayrollLineSchema], default: [] },
   period: { type: String, default: null },
   updated_by: Number,
+  institute_name: String,
   created_at: String,
   updated_at: String,
 });
@@ -91,6 +93,7 @@ const FeeSchema = new mongoose.Schema({
   notes: { type: String, default: "" },
   voucher_code: { type: String, unique: true, required: true },
   created_by: { type: Number, required: true },
+  institute_name: String, // Added institute name
   created_at: String,
   updated_at: String,
 });
@@ -507,7 +510,7 @@ export function createDb({ dbPath }) {
       return userId;
     },
 
-    async createUser({ email, password_hash, password_plain, role, created_by, name }) {
+    async createUser({ email, password_hash, password_plain, role, created_by, name, institute_name }) {
       const exists = await User.exists({ email });
       if (exists) {
         const err = new Error("Email exists");
@@ -522,13 +525,14 @@ export function createDb({ dbPath }) {
         password_plain,
         role,
         name: name ?? null,
+        institute_name: institute_name ?? null,
         created_by: created_by ?? null,
         created_at: nowIso(),
       });
       return sanitizeUser(user);
     },
 
-    async updateUserAccount({ id, email, name, password_hash, password_plain }) {
+    async updateUserAccount({ id, email, name, password_hash, password_plain, institute_name }) {
       const user = await User.findOne({ id });
       if (!user) return null;
       if (email !== undefined) {
@@ -542,6 +546,7 @@ export function createDb({ dbPath }) {
         user.email = nextEmail;
       }
       if (name !== undefined) user.name = name === null ? null : String(name);
+      if (institute_name !== undefined) user.institute_name = institute_name === null ? null : String(institute_name);
       if (password_hash !== undefined) user.password_hash = password_hash;
       if (password_plain !== undefined) user.password_plain = password_plain;
       user.updated_at = nowIso();
@@ -549,7 +554,7 @@ export function createDb({ dbPath }) {
       return sanitizeUser(user);
     },
 
-    async updateAssignedUser({ id, email, role, password_hash, password_plain, name }) {
+    async updateAssignedUser({ id, email, role, password_hash, password_plain, name, institute_name }) {
       const user = await User.findOne({ id });
       if (!user) return null;
       const currentRole = user.role;
@@ -575,6 +580,7 @@ export function createDb({ dbPath }) {
       }
       if (role !== undefined) user.role = role;
       if (name !== undefined) user.name = name === null ? null : String(name);
+      if (institute_name !== undefined) user.institute_name = institute_name === null ? null : String(institute_name);
       if (password_hash !== undefined) user.password_hash = password_hash;
       if (password_plain !== undefined) user.password_plain = password_plain;
       user.updated_at = nowIso();
@@ -625,7 +631,7 @@ export function createDb({ dbPath }) {
     async listStudentUsersForFees() {
       const users = await User.find({ role: "student" })
         .sort({ id: -1 })
-        .select("id email name created_at")
+        .select("id email name created_at institute_name")
         .lean();
       return users.map((u) => {
         const { _id, __v, ...rest } = u;
@@ -653,12 +659,22 @@ export function createDb({ dbPath }) {
       return sortPayrollsNewestFirst(docs).map(stripPayrollLean);
     },
 
-    async listPayrollWithUsers() {
-      const users = await User.find({ role: { $nin: ["finance", "student"] } })
+    async listPayrollWithUsers({ institute_name } = {}) {
+      const userFilter = { role: { $nin: ["finance", "student"] } };
+      if (institute_name) {
+        userFilter.institute_name = institute_name;
+      }
+      const users = await User.find(userFilter)
         .sort({ id: -1 })
-        .select("id email role name")
+        .select("id email role name institute_name")
         .lean();
-      const payrollDocs = await Payroll.find({}).lean();
+      
+      const payrollFilter = {};
+      if (institute_name) {
+        payrollFilter.institute_name = institute_name;
+      }
+      const payrollDocs = await Payroll.find(payrollFilter).lean();
+      
       const byUserId = new Map();
       for (const p of payrollDocs) {
         const uid = Number(p.user_id);
@@ -688,6 +704,11 @@ export function createDb({ dbPath }) {
       if (!Number.isFinite(uid)) {
         throw new Error("Invalid user_id for payroll");
       }
+      
+      // Get updated_by user's institute_name
+      const updater = await this.getUserById(updated_by);
+      const institute_name = updater?.institute_name ?? null;
+      
       const now = nowIso();
       let doc = await Payroll.findOne({ user_id: uid, period_key: pk });
       if (doc) {
@@ -699,6 +720,7 @@ export function createDb({ dbPath }) {
         doc.deductions = deductions;
         doc.fines_cuts = fines_cuts;
         doc.updated_by = updated_by;
+        doc.institute_name = institute_name;
         doc.updated_at = now;
         await doc.save();
       } else {
@@ -711,6 +733,7 @@ export function createDb({ dbPath }) {
           deductions,
           fines_cuts,
           updated_by,
+          institute_name,
           created_at: now,
           updated_at: now,
         });
@@ -749,6 +772,11 @@ export function createDb({ dbPath }) {
         err.code = "INVALID_TITLE";
         throw err;
       }
+      
+      // Get creator's institute name to save with fee
+      const creator = await this.getUserById(created_by);
+      const institute_name = creator?.institute_name ?? null;
+      
       const id = await getNextId("fees");
       const voucher_code = `VCH-${String(id).padStart(6, "0")}`;
       const now = nowIso();
@@ -760,14 +788,19 @@ export function createDb({ dbPath }) {
         notes: String(notes ?? "").trim(),
         voucher_code,
         created_by,
+        institute_name,
         created_at: now,
         updated_at: now,
       });
       return stripFeeLean(doc.toObject());
     },
 
-    async listFeesForFinance() {
-      const fees = await Fee.find({}).sort({ id: -1 }).lean();
+    async listFeesForFinance({ institute_name } = {}) {
+      const filter = {};
+      if (institute_name) {
+        filter.institute_name = institute_name;
+      }
+      const fees = await Fee.find(filter).sort({ id: -1 }).lean();
       const studentIds = [...new Set(fees.map((f) => f.student_user_id).filter((x) => Number.isFinite(Number(x))))];
       const students = await User.find({ id: { $in: studentIds } })
         .select("id email name")
@@ -786,18 +819,29 @@ export function createDb({ dbPath }) {
       return fees.map(stripFeeLean);
     },
 
-    async getFeeById(feeId) {
+    async getFeeById(feeId, { institute_name } = {}) {
       const id = Number(feeId);
       if (!Number.isFinite(id)) return null;
-      const doc = await Fee.findOne({ id }).lean();
+      const filter = { id };
+      if (institute_name) {
+        filter.institute_name = institute_name;
+      }
+      const doc = await Fee.findOne(filter).lean();
       return doc ? stripFeeLean(doc) : null;
     },
 
     async getRecipientsForComplaints() {
       const users = await User.find({ role: { $in: ["director", "principal", "vice_principal"] } })
-        .select("id email name role")
+        .select("id email name role institute_name")
         .lean();
       return users.map((u) => ({ ...u, _id: undefined, __v: undefined }));
+    },
+
+    async instituteNameExists(institute_name) {
+      const name = String(institute_name || "").trim();
+      if (!name) return false;
+      const count = await User.countDocuments({ institute_name: name });
+      return count > 0;
     },
 
     async createComplaint({ created_by, assigned_to, subject, details }) {
@@ -916,10 +960,17 @@ export function createDb({ dbPath }) {
       return users.map((u) => u.email);
     },
 
-    async listContentByType(type) {
+    async listContentByType(type, { institute_name } = {}) {
       const Model = getModel(type);
       if (!Model) return [];
-      const docs = await Model.find().sort({ id: -1 }).lean();
+      
+      // Build filter: if institute_name is provided, filter by it
+      const filter = {};
+      if (institute_name) {
+        filter.institute_name = institute_name;
+      }
+      
+      const docs = await Model.find(filter).sort({ id: -1 }).lean();
 
       // Collect creator IDs to fetch emails
       const creatorIds = [...new Set(docs.map((d) => d.created_by).filter((id) => id != null))];
@@ -928,12 +979,13 @@ export function createDb({ dbPath }) {
 
       return docs.map(doc => {
         // Reconstruct expected interface: { id, type, data: {...payload}, ...meta }
-        const { _id, __v, id, created_by, created_at, updated_at, ...payload } = doc;
+        const { _id, __v, id, created_by, institute_name: iname, created_at, updated_at, ...payload } = doc;
         return {
           id,
           type,
           data: payload, // Return payload object directly
           created_by,
+          institute_name: iname,
           creator_email: userMap.get(created_by) || null,
           created_at,
           updated_at,
@@ -941,17 +993,24 @@ export function createDb({ dbPath }) {
       });
     },
 
-    async getContentById(type, id) {
+    async getContentById(type, id, { institute_name } = {}) {
       const Model = getModel(type);
       if (!Model) return null;
-      const doc = await Model.findOne({ id }).lean();
+      
+      const filter = { id };
+      if (institute_name) {
+        filter.institute_name = institute_name;
+      }
+      
+      const doc = await Model.findOne(filter).lean();
       if (!doc) return null;
-      const { _id, __v, id: docId, created_by, created_at, updated_at, ...payload } = doc;
+      const { _id, __v, id: docId, created_by, institute_name: iname, created_at, updated_at, ...payload } = doc;
       return {
         id: docId,
         type,
         data: payload,
         created_by,
+        institute_name: iname,
         created_at,
         updated_at,
       };
@@ -960,22 +1019,29 @@ export function createDb({ dbPath }) {
     async createContent({ type, data, created_by }) {
       const Model = getModel(type);
       if (!Model) throw new Error(`Unknown content type: ${type}`);
+      
+      // Get creator's institute_name
+      const creator = await this.getUserById(created_by);
+      const institute_name = creator?.institute_name ?? null;
+      
       const id = await getNextId("content");
       const payload = data ?? {};
       const doc = await Model.create({
         id,
         created_by,
+        institute_name, // Add institute_name to content
         created_at: nowIso(),
         updated_at: nowIso(),
         ...payload
       });
       // Return in same format as get
-      const { _id, __v, id: docId, created_by: cb, created_at: ca, updated_at: ua, ...savedPayload } = doc.toObject();
+      const { _id, __v, id: docId, created_by: cb, institute_name: iname, created_at: ca, updated_at: ua, ...savedPayload } = doc.toObject();
       return {
         id: docId,
         type,
         data: savedPayload,
         created_by: cb,
+        institute_name: iname,
         created_at: ca,
         updated_at: ua,
       };

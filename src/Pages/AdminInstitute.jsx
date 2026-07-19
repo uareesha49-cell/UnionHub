@@ -35,12 +35,33 @@ export const AdminInstitute = () => {
     }
   }, [auth.isAuthenticated, auth.token]);
 
-  const roleCounts = users.reduce((acc, user) => {
-    acc[user.role] = (acc[user.role] || 0) + 1;
+  // Group users by institute_name
+  const institutes = users.reduce((acc, user) => {
+    const institute = user.institute_name || "Unassigned";
+    if (!acc[institute]) {
+      acc[institute] = {
+        name: institute,
+        director: null,
+        roleCounts: {
+          student: 0,
+          principal: 0,
+          vice_principal: 0,
+          teacher: 0,
+          tech_staff: 0,
+          finance: 0,
+        },
+      };
+    }
+    if (user.role === "director") {
+      acc[institute].director = user;
+    }
+    if (acc[institute].roleCounts.hasOwnProperty(user.role)) {
+      acc[institute].roleCounts[user.role]++;
+    }
     return acc;
   }, {});
 
-  const directorUser = users.find(user => user.role === "director");
+  const instituteList = Object.values(institutes);
 
   return (
     <div className="flex flex-col gap-6 bg-white rounded-3xl h-full p-6 font-montserrat">
@@ -79,40 +100,42 @@ export const AdminInstitute = () => {
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b hover:bg-gray-50">
-                <td className="py-3 px-4 text-gray-800 font-nunito" title="Union Hub Institute">
-                  {
-                    "Union Hub Institute".length > 10
-                      ? "Union Hub Institute".slice(0, 10) + "..."
-                      : "Union Hub Institute"
-                  }
-                </td>
-                <td className="py-3 px-4 text-gray-800 font-nunito" title={directorUser?.email || "-"}>
-                  {
-                    (directorUser?.email || "-").length > 10
-                      ? (directorUser?.email || "-").slice(0, 10) + "..."
-                      : (directorUser?.email || "-")
-                  }
-                </td>
-                <td className="py-3 px-4 text-gray-800 font-nunito">
-                  {roleCounts.student || 0}
-                </td>
-                <td className="py-3 px-4 text-gray-800 font-nunito">
-                  {roleCounts.principal || 0}
-                </td>
-                <td className="py-3 px-4 text-gray-800 font-nunito">
-                  {roleCounts.vice_principal || 0}
-                </td>
-                <td className="py-3 px-4 text-gray-800 font-nunito">
-                  {roleCounts.teacher || 0}
-                </td>
-                <td className="py-3 px-4 text-gray-800 font-nunito">
-                  {roleCounts.tech_staff || 0}
-                </td>
-                <td className="py-3 px-4 text-gray-800 font-nunito">
-                  {roleCounts.finance || 0}
-                </td>
-              </tr>
+              {instituteList.map((institute, index) => (
+                <tr key={index} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4 text-gray-800 font-nunito" title={institute.name}>
+                    {
+                      institute.name.length > 10
+                        ? institute.name.slice(0, 10) + "..."
+                        : institute.name
+                    }
+                  </td>
+                  <td className="py-3 px-4 text-gray-800 font-nunito" title={institute.director?.email || "-"}>
+                    {
+                      (institute.director?.email || "-").length > 10
+                        ? (institute.director?.email || "-").slice(0, 10) + "..."
+                        : (institute.director?.email || "-")
+                    }
+                  </td>
+                  <td className="py-3 px-4 text-gray-800 font-nunito">
+                    {institute.roleCounts.student}
+                  </td>
+                  <td className="py-3 px-4 text-gray-800 font-nunito">
+                    {institute.roleCounts.principal}
+                  </td>
+                  <td className="py-3 px-4 text-gray-800 font-nunito">
+                    {institute.roleCounts.vice_principal}
+                  </td>
+                  <td className="py-3 px-4 text-gray-800 font-nunito">
+                    {institute.roleCounts.teacher}
+                  </td>
+                  <td className="py-3 px-4 text-gray-800 font-nunito">
+                    {institute.roleCounts.tech_staff}
+                  </td>
+                  <td className="py-3 px-4 text-gray-800 font-nunito">
+                    {institute.roleCounts.finance}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

@@ -7,6 +7,7 @@ import { Eye, EyeOff, ChevronDown } from "lucide-react";
 import { mediaData } from "../utils/mediaData";
 import { useAuth } from "../auth/AuthContext";
 import { ActionButton } from "../components/ActionButton";
+import { apiRequest } from "../auth/api";
 
 // ✅ Validation Schemas
 const CampusSchema = Yup.object().shape({
@@ -36,13 +37,23 @@ export const Login = () => {
           <Formik
             initialValues={{ campusName: "" }}
             validationSchema={CampusSchema}
-            onSubmit={(values, { setSubmitting }) => {
-              setCampusName(values.campusName);
-              setStep(2);
-              setSubmitting(false);
+            onSubmit={async (values, { setSubmitting, setErrors }) => {
+              try {
+                const response = await apiRequest(`/auth/institutes/validate?name=${encodeURIComponent(values.campusName)}`);
+                if (!response.exists) {
+                  setErrors({ campusName: "Campus/institute not found" });
+                  return;
+                }
+                setCampusName(values.campusName);
+                setStep(2);
+              } catch (e) {
+                // Error toast handled in apiRequest
+              } finally {
+                setSubmitting(false);
+              }
             }}
           >
-            {({ handleSubmit, isSubmitting }) => (
+            {({ handleSubmit, isSubmitting, errors }) => (
               <Form onSubmit={handleSubmit} className="flex flex-col items-center w-full">
                 <div className="flex flex-col items-start mb-4 w-full max-w-[432px]">
                   <h2 className="text-lg mb-2 font-poppins text-gray-700">
@@ -85,6 +96,7 @@ export const Login = () => {
             type="button"
             onClick={() => {
               setRole("admin");
+              setCampusName(null); // Clear campus name for admin login
               setStep(2);
             }}
             className="text-primary text-md font-semibold hover:underline"
@@ -118,9 +130,17 @@ export const Login = () => {
           <Formik
             initialValues={{ email: "", password: "" }}
             validationSchema={LoginSchema}
-            onSubmit={async (values, { setSubmitting }) => {
+            onSubmit={async (values, { setSubmitting, setErrors }) => {
               try {
-                await auth.login({ role, email: values.email, password: values.password });
+                const session = await auth.login({ role, email: values.email, password: values.password });
+                
+                // If not admin, check that user's institute_name matches entered campus name
+                if (role !== "admin" && session.user.institute_name !== campusName) {
+                  setErrors({ email: "This account does not belong to this campus" });
+                  auth.logout();
+                  return;
+                }
+                
                       if (role === "admin") {
                         navigate("/layout/admin-dashboard");
                       } else if (role === "student") {
@@ -135,7 +155,7 @@ export const Login = () => {
               }
             }}
           >
-            {({ handleSubmit, isSubmitting }) => (
+            {({ handleSubmit, isSubmitting, errors }) => (
               <Form onSubmit={handleSubmit} className="flex flex-col items-center w-full">
                 {role !== "admin" && (
                   <div className="flex flex-col items-start mb-4 w-full max-w-[432px]">
