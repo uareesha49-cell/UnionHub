@@ -94,14 +94,26 @@ app.use(express.json({ limit: "1mb" }));
 app.use(
   cors({
     origin: (origin, callback) => {
-      const allowedOrigins = process.env.CORS_ORIGIN 
-        ? [process.env.CORS_ORIGIN] 
-        : ["http://localhost:5173", "http://localhost:5174"];
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+      // Allow requests with no origin (Postman, mobile apps, server-to-server)
+      if (!origin) {
+        return callback(null, true);
       }
+
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+      ];
+
+      // Allow localhost and any Vercel deployment (*.vercel.app)
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
+        return callback(null, true);
+      }
+
+      console.log("Blocked by CORS:", origin);
+      callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
