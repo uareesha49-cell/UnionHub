@@ -527,8 +527,19 @@ export function createDb({ dbPath }) {
         name: name ?? null,
         institute_name: institute_name ?? null,
         created_by: created_by ?? null,
+        is_active: true,
+        last_login: null,
         created_at: nowIso(),
+        updated_at: nowIso(),
       });
+      return sanitizeUser(user);
+    },
+    async updateLastLogin(userId) {
+      const user = await User.findOne({ id: userId });
+      if (!user) return null;
+      user.last_login = nowIso();
+      user.updated_at = nowIso();
+      await user.save();
       return sanitizeUser(user);
     },
 
